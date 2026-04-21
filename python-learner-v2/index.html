@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 学习平台 - 风变编程</title>
+    
+    <!-- CodeMirror - Local Files -->
+    <link rel="stylesheet" href="/codemirror/codemirror.min.css">
+    <link rel="stylesheet" href="/codemirror/pythonidea.min.css">
+    <script src="/codemirror/codemirror.min.js"></script>
+    <script src="/codemirror/mode/python/python.min.js"></script>
+    <script src="/codemirror/addon/edit/closebrackets.min.js"></script>
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 左侧导航 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>🐍 Python学习</h1>
+                <p>风变编程 · 53章课程</p>
+            </div>
+            
+            <div class="stats">
+                <div class="stats-grid">
+                    <div class="stat"><b>4</b><small>课程</small></div>
+                    <div class="stat"><b id="chapterCount">53</b><small>章节</small></div>
+                    <div class="stat"><b id="progressCount">0</b><small>已学</small></div>
+                </div>
+            </div>
+            
+            <div class="course-list" id="courseList"></div>
+        </aside>
+
+        <!-- 中间内容区 -->
+        <main class="main">
+            <div class="toolbar">
+                <div class="current-title">
+                    当前：<span id="currentTitle">请选择课程</span>
+                </div>
+                <div class="mode-tabs">
+                    <div class="mode-tab active" onclick="switchMode('study')">📖 学习</div>
+                    <div class="mode-tab" onclick="switchMode('practice')">📝 练习</div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <!-- 学习视图 -->
+                <div class="study-view active" id="studyView">
+                    <div class="study-frame">
+                        <iframe id="studyFrame" src="about:blank"></iframe>
+                    </div>
+                </div>
+
+                <!-- 练习视图 -->
+                <div class="practice-view" id="practiceView">
+                    <div class="practice-content">
+                        <div class="exercises-panel" id="exercisesPanel">
+                            <h3>📋 练习题库</h3>
+                            <div id="exercisesList"></div>
+                        </div>
+
+                        <div class="editor-panel">
+                            <div class="editor-header">
+                                <div class="editor-title">🐍 Python 代码编辑器 <small>(Ctrl+Enter 运行)</small></div>
+                                <button class="run-btn" id="runBtn" onclick="runPython()">▶ 运行</button>
+                            </div>
+                            <div class="editor-wrap">
+                                <textarea id="codeEditor"># 在这里编写 Python 代码
+print("Hello, Python!")
+</textarea>
+                            </div>
+                            <div class="output-panel">
+                                <div class="output-header">
+                                    <span>📤 输出结果</span>
+                                    <span class="output-status status-loading" id="outputStatus">等待运行</span>
+                                </div>
+                                <div class="output-content" id="outputContent">点击"运行"按钮加载 Python 环境...</div>
+                            </div>
+                        </div>
+
+                        <div class="ai-panel">
+                            <div class="ai-header">
+                                <h3>🤖 AI 助手 <span class="ai-status offline" id="aiStatus">离线</span></h3>
+                                <button class="ai-refresh" onclick="checkAI()">🔄</button>
+                            </div>
+                            <div class="ai-chat" id="aiChat">
+                                <div class="ai-message ai">你好！我是 AI 助手，可以帮助你解答 Python 问题。</div>
+                            </div>
+                            <div class="ai-input">
+                                <input type="text" id="aiInput" placeholder="输入问题..." onkeypress="if(event.key==='Enter')askAI()">
+                                <button onclick="askAI()">发送</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="/js/app.js"></script>
+</body>
+</html>

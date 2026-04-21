@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流程优化PDF分析结果</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { 
+            color: #333; 
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .summary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .summary h2 { margin-bottom: 15px; }
+        .stats { display: flex; justify-content: space-around; flex-wrap: wrap; }
+        .stat { text-align: center; padding: 15px; }
+        .stat-number { font-size: 2.5em; font-weight: bold; }
+        .stat-label { font-size: 0.9em; opacity: 0.9; }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        .tab:hover { color: #667eea; }
+        .tab.active { 
+            color: #667eea; 
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        .content { display: none; }
+        .content.active { display: block; }
+        .page-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .page-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .image-container {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin: 15px 0;
+        }
+        img { 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: 5px;
+            display: block;
+            margin: 0 auto;
+        }
+        .file-list {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .file-list h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .file-list ul {
+            list-style: none;
+        }
+        .file-list li {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #f0f0f0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .file-list li:before {
+            content: "📄 ";
+            margin-right: 8px;
+        }
+        .file-list li.cad:before { content: "📐 "; }
+        .file-list li.image:before { content: "🖼️ "; }
+        .file-list li.data:before { content: "📊 "; }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+        .badge-cad { background: #4CAF50; color: white; }
+        .badge-image { background: #2196F3; color: white; }
+        .badge-data { background: #FF9800; color: white; }
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .instructions h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+        .instructions ol {
+            margin-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #d32f2f;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>流程优化PDF分析结果</h1>
+        <p class="subtitle">手绘流程图自动识别与CAD转换</p>
+        
+        <div class="summary">
+            <h2>📊 分析概览</h2>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">总页数</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">28</div>
+                    <div class="stat-label">识别节点</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">772</div>
+                    <div class="stat-label">连接线</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">CAD文件</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('comparison')">对比视图</button>
+            <button class="tab" onclick="showTab('cad')">CAD文件</button>
+            <button class="tab" onclick="showTab('details')">详细分析</button>
+            <button class="tab" onclick="showTab('guide')">使用指南</button>
+        </div>
+
+        <div id="comparison" class="content active">
+            <div class="page-section">
+                <h3>第1页 - 识别对比</h3>
+                <div class="image-container">
+                    <img src="comparison_page1.png" alt="第1页对比">
+                </div>
+                <p><strong>识别结果:</strong> 5个节点, 191条连接线</p>
+            </div>
+            
+            <div class="page-section">
+                <h3>第2页 - 识别对比</h3>
+                <div class="image-container">
+                    <img src="comparison_page2.png" alt="第2页对比">
+                </div>
+                <p><strong>识别结果:</strong> 7个节点, 207条连接线</p>
+            </div>
+            
+            <div class="page-section">
+                <h3>第3页 - 识别对比</h3>
+                <div class="image-container">
+                    <img src="comparison_page3.png" alt="第3页对比">
+                </div>
+                <p><strong>识别结果:</strong> 4个节点, 164条连接线</p>
+            </div>
+            
+            <div class="page-section">
+                <h3>第4页 - 识别对比</h3>
+                <div class="image-container">
+                    <img src="comparison_page4.png" alt="第4页对比">
+                </div>
+                <p><strong>识别结果:</strong> 12个节点, 210条连接线</p>
+            </div>
+        </div>
+
+        <div id="cad" class="content">
+            <div class="file-list">
+                <h4>📐 CAD文件 (DXF格式)</h4>
+                <ul>
+                    <li class="cad">flowchart_page1.dxf <span class="badge badge-cad">第1页</span></li>
+                    <li class="cad">flowchart_page2.dxf <span class="badge badge-cad">第2页</span></li>
+                    <li class="cad">flowchart_page3.dxf <span class="badge badge-cad">第3页</span></li>
+                    <li class="cad">flowchart_page4.dxf <span class="badge badge-cad">第4页</span></li>
+                </ul>
+            </div>
+            
+            <div class="instructions">
+                <h3>如何使用CAD文件</h3>
+                <ol>
+                    <li>使用AutoCAD、DraftSight、LibreCAD等CAD软件打开DXF文件</li>
+                    <li>文件包含三个图层:
+                        <ul>
+                            <li><strong>NODES</strong> - 流程图节点(绿色)</li>
+                            <li><strong>TEXT</strong> - 文本标注(黄色)</li>
+                            <li><strong>ARROWS</strong> - 连接线(红色)</li>
+                        </ul>
+                    </li>
+                    <li>可以在CAD软件中编辑、修改和优化流程图</li>
+                    <li>建议手动调整节点位置和添加详细文本说明</li>
+                </ol>
+            </div>
+        </div>
+
+        <div id="details" class="content">
+            <div class="page-section">
+                <h3>第1页详细分析</h3>
+                <div class="image-container">
+                    <img src="page_1.png" alt="第1页原始图">
+                </div>
+                <div class="file-list">
+                    <h4>生成的文件</h4>
+                    <ul>
+                        <li class="image">page_1.png - 原始图像</li>
+                        <li class="image">comparison_page1.png - 对比图像</li>
+                        <li class="cad">flowchart_page1.dxf - CAD文件</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="page-section">
+                <h3>第2页详细分析</h3>
+                <div class="image-container">
+                    <img src="page_2.png" alt="第2页原始图">
+                </div>
+                <div class="file-list">
+                    <h4>生成的文件</h4>
+                    <ul>
+                        <li class="image">page_2.png - 原始图像</li>
+                        <li class="image">comparison_page2.png - 对比图像</li>
+                        <li class="cad">flowchart_page2.dxf - CAD文件</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="page-section">
+                <h3>第3页详细分析</h3>
+                <div class="image-container">
+                    <img src="page_3.png" alt="第3页原始图">
+                </div>
+                <div class="file-list">
+                    <h4>生成的文件</h4>
+                    <ul>
+                        <li class="image">page_3.png - 原始图像</li>
+                        <li class="image">comparison_page3.png - 对比图像</li>
+                        <li class="cad">flowchart_page3.dxf - CAD文件</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="page-section">
+                <h3>第4页详细分析</h3>
+                <div class="image-container">
+                    <img src="page_4.png" alt="第4页原始图">
+                </div>
+                <div class="file-list">
+                    <h4>生成的文件</h4>
+                    <ul>
+                        <li class="image">page_4.png - 原始图像</li>
+                        <li class="image">comparison_page4.png - 对比图像</li>
+                        <li class="cad">flowchart_page4.dxf - CAD文件</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="guide" class="content">
+            <div class="instructions">
+                <h3>📋 完整使用流程</h3>
+                <ol>
+                    <li><strong>查看对比图像</strong> - 在"对比视图"标签页查看识别效果</li>
+                    <li><strong>打开CAD文件</strong> - 使用CAD软件打开对应的DXF文件</li>
+                    <li><strong>编辑优化</strong> - 在CAD中调整节点位置、添加文本、美化样式</li>
+                    <li><strong>导出使用</strong> - 导出为PDF或其他格式用于文档或打印</li>
+                </ol>
+            </div>
+
+            <div class="file-list">
+                <h4>📦 所有生成文件</h4>
+                <ul>
+                    <li class="image">page_1.png ~ page_4.png - 原始提取图像</li>
+                    <li class="image">comparison_page1.png ~ comparison_page4.png - 对比图像</li>
+                    <li class="cad">flowchart_page1.dxf ~ flowchart_page4.dxf - CAD文件</li>
+                    <li class="data">analysis.json - 节点分析数据</li>
+                </ul>
+            </div>
+
+            <div class="instructions">
+                <h3>🛠️ 技术细节</h3>
+                <ul>
+                    <li><strong>节点检测:</strong> 基于OpenCV轮廓检测和形状分析</li>
+                    <li><strong>连接线检测:</strong> Canny边缘检测 + 霍夫直线变换</li>
+                    <li><strong>文本提取:</strong> Tesseract OCR引擎(中英文)</li>
+                    <li><strong>CAD生成:</strong> ezdxf库创建标准DXF文件</li>
+                </ul>
+            </div>
+
+            <div class="instructions">
+                <h3>💡 优化建议</h3>
+                <ol>
+                    <li>在CAD中手动调整节点位置,使其更整齐</li>
+                    <li>补充流程图中的详细文字说明</li>
+                    <li>统一线条粗细、颜色等视觉样式</li>
+                    <li>添加流程图的标题、图例等辅助信息</li>
+                    <li>根据实际需求调整图形大小和间距</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>生成时间: 2026-03-29 | 工具: OpenClaw AI Assistant</p>
+            <p>源文件: F:\下载\流程优化_0.pdf</p>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // 隐藏所有内容
+            document.querySelectorAll('.content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有标签的active类
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 激活选中的标签
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

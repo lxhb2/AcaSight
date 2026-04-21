@@ -1,0 +1,50 @@
+{
+  "total_contours": 13381,
+  "nodes": [
+    {
+      "id": 4864,
+      "x": 125,
+      "y": 569,
+      "width": 68,
+      "height": 166,
+      "area": 1170,
+      "aspect_ratio": 0.41
+    },
+    {
+      "id": 7055,
+      "x": 132,
+      "y": 415,
+      "width": 132,
+      "height": 287,
+      "area": 2066,
+      "aspect_ratio": 0.46
+    },
+    {
+      "id": 9932,
+      "x": 94,
+      "y": 225,
+      "width": 67,
+      "height": 98,
+      "area": 537,
+      "aspect_ratio": 0.68
+    },
+    {
+      "id": 11196,
+      "x": 138,
+      "y": 138,
+      "width": 116,
+      "height": 203,
+      "area": 1243,
+      "aspect_ratio": 0.57
+    },
+    {
+      "id": 12178,
+      "x": 134,
+      "y": 76,
+      "width": 93,
+      "height": 71,
+      "area": 687,
+      "aspect_ratio": 1.31
+    }
+  ]
+}

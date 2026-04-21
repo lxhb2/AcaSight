@@ -1,0 +1,22 @@
+{
+  "openclaw": {
+    "gateway_url": "http://localhost:3000",
+    "api_key": "",
+    "timeout": 30.0,
+    "enabled": false,
+    "model": {
+      "provider": "ollama",
+      "name": "llama3.2:3b",
+      "base_url": "http://localhost:11434",
+      "temperature": 0.1
+    }
+  },
+  "thinking_brain": {
+    "model": {
+      "provider": "siliconflow",
+      "name": "Qwen/Qwen2.5-72B-Instruct",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "temperature": 0.7
+    }
+  }
+}

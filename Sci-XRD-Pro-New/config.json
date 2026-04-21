@@ -1,0 +1,24 @@
+{
+  "ui": {
+    "theme": "light",
+    "font_family": "Segoe UI",
+    "font_size": 10,
+    "language": "zh_CN"
+  },
+  "analysis": {
+    "peak_method": "auto",
+    "sensitivity": 0.1,
+    "max_peaks": 20
+  },
+  "ai": {
+    "enabled": true,
+    "base_url": "http://localhost:11434",
+    "model": "llama3.2:latest",
+    "timeout": 60
+  },
+  "wavelength": 1.5406,
+  "logging": {
+    "level": "INFO",
+    "file": "logs/sci_xrd.log"
+  }
+}

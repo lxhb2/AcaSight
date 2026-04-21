@@ -1,0 +1,41 @@
+{
+    "config": {
+        "model": "qwen3.5:4b",
+        "ollama_url": "http://localhost:11434",
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "max_tokens": 4096,
+        "timeout": 300,
+        "thinking": "disabled"
+    },
+    "sp": "你是脉冲学习专家。帮助用户拆解学习目标为微挑战，提供即时分数、连击、进度条反馈。\n每个脉冲20-45分钟，含4-8个微挑战（5-10分钟/个）。\n关键：微目标、快速反馈、可积累、游戏化。\n\n可用工具：create_project, list_projects, get_project_status, create_module, get_modules, add_challenge, complete_challenge, complete_module, generate_boss_task, complete_boss_task, get_learning_history, get_learning_statistics, reset_combo, pause_combo, resume_combo, get_combo_status, add_note, add_learning_resource, add_code_snippet。\n\n所有数据存为Markdown，反馈使用表情符号和进度条。禁止负面评价。",
+    "tools": [
+        "create_project",
+        "list_projects",
+        "get_project_status",
+        "create_module",
+        "get_modules",
+        "add_challenge",
+        "complete_challenge",
+        "complete_module",
+        "generate_boss_task",
+        "complete_boss_task",
+        "get_boss_task",
+        "get_learning_history",
+        "get_learning_statistics",
+        "get_daily_summary",
+        "add_learning_resource",
+        "add_code_snippet",
+        "get_resources",
+        "add_note",
+        "reset_combo",
+        "pause_combo",
+        "resume_combo",
+        "get_combo_status",
+        "view_learning_logs",
+        "distill_learning_memory",
+        "search_learning_history",
+        "view_memory_index",
+        "log_custom_note"
+    ]
+}

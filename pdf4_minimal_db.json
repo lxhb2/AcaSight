@@ -1,0 +1,781 @@
+{
+  "source": "PDF4-2009 Minimal Database",
+  "created": "2026-04-13",
+  "card_count": 22,
+  "cards": [
+    {
+      "pdf_number": "46-1045",
+      "name": "Quartz, syn",
+      "formula": "SiO2",
+      "peaks": [
+        [
+          4.257,
+          100
+        ],
+        [
+          3.343,
+          35
+        ],
+        [
+          2.457,
+          12
+        ],
+        [
+          2.282,
+          8
+        ],
+        [
+          2.237,
+          6
+        ]
+      ],
+      "crystal_system": "Trigonal",
+      "space_group": "P3121",
+      "cell_params": {
+        "a": 4.913,
+        "b": 4.913,
+        "c": 5.405,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 120
+      },
+      "rir": 1.0,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "47-1743",
+      "name": "Calcite",
+      "formula": "CaCO3",
+      "peaks": [
+        [
+          3.035,
+          100
+        ],
+        [
+          2.495,
+          18
+        ],
+        [
+          2.285,
+          18
+        ],
+        [
+          1.913,
+          17
+        ]
+      ],
+      "crystal_system": "Trigonal",
+      "space_group": "R-3c",
+      "cell_params": {
+        "a": 4.99,
+        "b": 4.99,
+        "c": 17.06,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 120
+      },
+      "rir": 2.2,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "33-0664",
+      "name": "Hematite",
+      "formula": "Fe2O3",
+      "peaks": [
+        [
+          2.702,
+          100
+        ],
+        [
+          2.519,
+          60
+        ],
+        [
+          1.634,
+          60
+        ],
+        [
+          1.454,
+          50
+        ]
+      ],
+      "crystal_system": "Trigonal",
+      "space_group": "R-3c",
+      "cell_params": {
+        "a": 5.04,
+        "b": 5.04,
+        "c": 13.75,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 120
+      },
+      "rir": 5.0,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "19-0629",
+      "name": "Magnetite",
+      "formula": "Fe3O4",
+      "peaks": [
+        [
+          2.532,
+          100
+        ],
+        [
+          2.97,
+          30
+        ],
+        [
+          1.485,
+          30
+        ],
+        [
+          1.615,
+          20
+        ]
+      ],
+      "crystal_system": "Cubic",
+      "space_group": "Fd-3m",
+      "cell_params": {
+        "a": 8.396,
+        "b": 8.396,
+        "c": 8.396,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 4.5,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "33-0311",
+      "name": "Gypsum",
+      "formula": "CaSO4·2H2O",
+      "peaks": [
+        [
+          7.63,
+          100
+        ],
+        [
+          4.27,
+          45
+        ],
+        [
+          3.066,
+          50
+        ],
+        [
+          2.868,
+          40
+        ]
+      ],
+      "crystal_system": "Monoclinic",
+      "space_group": "C2/c",
+      "cell_params": {
+        "a": 5.68,
+        "b": 15.18,
+        "c": 6.29,
+        "alpha": 90,
+        "beta": 113.8,
+        "gamma": 90
+      },
+      "rir": 0.6,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "14-0164",
+      "name": "Kaolinite",
+      "formula": "Al2Si2O5(OH)4",
+      "peaks": [
+        [
+          7.156,
+          100
+        ],
+        [
+          3.572,
+          80
+        ],
+        [
+          2.553,
+          60
+        ],
+        [
+          2.486,
+          50
+        ]
+      ],
+      "crystal_system": "Triclinic",
+      "space_group": "P-1",
+      "cell_params": {
+        "a": 5.15,
+        "b": 8.94,
+        "c": 7.4,
+        "alpha": 91.8,
+        "beta": 104.5,
+        "gamma": 90
+      },
+      "rir": 0.5,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "03-0016",
+      "name": "Montmorillonite",
+      "formula": "(Na,Ca)0.3(Al,Mg)2Si4O10(OH)2",
+      "peaks": [
+        [
+          15.0,
+          80
+        ],
+        [
+          5.0,
+          100
+        ],
+        [
+          4.45,
+          35
+        ],
+        [
+          2.58,
+          30
+        ]
+      ],
+      "crystal_system": "Monoclinic",
+      "space_group": "C2/m",
+      "cell_params": {
+        "a": 5.17,
+        "b": 8.94,
+        "c": 15.2,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 0.3,
+      "quality": "i"
+    },
+    {
+      "pdf_number": "19-0770",
+      "name": "Talc",
+      "formula": "Mg3Si4O10(OH)2",
+      "peaks": [
+        [
+          9.346,
+          100
+        ],
+        [
+          4.56,
+          80
+        ],
+        [
+          3.116,
+          60
+        ],
+        [
+          1.87,
+          50
+        ]
+      ],
+      "crystal_system": "Monoclinic",
+      "space_group": "C2/c",
+      "cell_params": {
+        "a": 5.29,
+        "b": 9.17,
+        "c": 18.95,
+        "alpha": 90,
+        "beta": 99.5,
+        "gamma": 90
+      },
+      "rir": 0.4,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "36-0426",
+      "name": "Dolomite",
+      "formula": "CaMg(CO3)2",
+      "peaks": [
+        [
+          2.886,
+          100
+        ],
+        [
+          2.191,
+          30
+        ],
+        [
+          2.671,
+          30
+        ],
+        [
+          1.785,
+          20
+        ]
+      ],
+      "crystal_system": "Trigonal",
+      "space_group": "R-3",
+      "cell_params": {
+        "a": 4.81,
+        "b": 4.81,
+        "c": 16.0,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 120
+      },
+      "rir": 1.5,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "35-0816",
+      "name": "Fluorite",
+      "formula": "CaF2",
+      "peaks": [
+        [
+          3.153,
+          100
+        ],
+        [
+          1.93,
+          75
+        ],
+        [
+          1.37,
+          25
+        ],
+        [
+          1.115,
+          15
+        ]
+      ],
+      "crystal_system": "Cubic",
+      "space_group": "Fm-3m",
+      "cell_params": {
+        "a": 5.46,
+        "b": 5.46,
+        "c": 5.46,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 3.5,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "24-1035",
+      "name": "Barite",
+      "formula": "BaSO4",
+      "peaks": [
+        [
+          3.319,
+          100
+        ],
+        [
+          3.446,
+          55
+        ],
+        [
+          2.12,
+          70
+        ],
+        [
+          2.212,
+          50
+        ]
+      ],
+      "crystal_system": "Orthorhombic",
+      "space_group": "Pnma",
+      "cell_params": {
+        "a": 8.88,
+        "b": 5.45,
+        "c": 7.15,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 7.0,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "34-0011",
+      "name": "Apatite",
+      "formula": "Ca5(PO4)3(OH,F,Cl)",
+      "peaks": [
+        [
+          2.814,
+          100
+        ],
+        [
+          2.706,
+          60
+        ],
+        [
+          2.798,
+          50
+        ],
+        [
+          1.841,
+          40
+        ]
+      ],
+      "crystal_system": "Hexagonal",
+      "space_group": "P63/m",
+      "cell_params": {
+        "a": 9.42,
+        "b": 9.42,
+        "c": 6.88,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 120
+      },
+      "rir": 2.0,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "37-0471",
+      "name": "Chalcopyrite",
+      "formula": "CuFeS2",
+      "peaks": [
+        [
+          3.034,
+          100
+        ],
+        [
+          2.627,
+          60
+        ],
+        [
+          1.866,
+          30
+        ],
+        [
+          1.581,
+          20
+        ]
+      ],
+      "crystal_system": "Tetragonal",
+      "space_group": "I-42d",
+      "cell_params": {
+        "a": 5.24,
+        "b": 5.24,
+        "c": 10.3,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 5.0,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "26-1116",
+      "name": "Chalcocite",
+      "formula": "Cu2S",
+      "peaks": [
+        [
+          3.685,
+          100
+        ],
+        [
+          3.201,
+          50
+        ],
+        [
+          2.403,
+          40
+        ],
+        [
+          2.112,
+          35
+        ]
+      ],
+      "crystal_system": "Monoclinic",
+      "space_group": "P21/c",
+      "cell_params": {
+        "a": 7.63,
+        "b": 7.87,
+        "c": 11.01,
+        "alpha": 90,
+        "beta": 116.4,
+        "gamma": 90
+      },
+      "rir": 4.8,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "06-0464",
+      "name": "Covellite",
+      "formula": "CuS",
+      "peaks": [
+        [
+          3.807,
+          100
+        ],
+        [
+          3.024,
+          80
+        ],
+        [
+          2.632,
+          50
+        ],
+        [
+          1.898,
+          40
+        ]
+      ],
+      "crystal_system": "Hexagonal",
+      "space_group": "P63/mmc",
+      "cell_params": {
+        "a": 3.79,
+        "b": 3.79,
+        "c": 16.34,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 120
+      },
+      "rir": 5.2,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "42-1405",
+      "name": "Bornite",
+      "formula": "Cu5FeS4",
+      "peaks": [
+        [
+          3.261,
+          100
+        ],
+        [
+          2.747,
+          70
+        ],
+        [
+          2.624,
+          60
+        ],
+        [
+          1.935,
+          50
+        ]
+      ],
+      "crystal_system": "Orthorhombic",
+      "space_group": "Pcmn",
+      "cell_params": {
+        "a": 10.95,
+        "b": 21.86,
+        "c": 10.95,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 4.5,
+      "quality": "i"
+    },
+    {
+      "pdf_number": "24-1148",
+      "name": "Tetrahedrite",
+      "formula": "Cu12As4S13",
+      "peaks": [
+        [
+          3.38,
+          100
+        ],
+        [
+          2.71,
+          60
+        ],
+        [
+          2.59,
+          55
+        ],
+        [
+          1.87,
+          40
+        ]
+      ],
+      "crystal_system": "Cubic",
+      "space_group": "I-43m",
+      "cell_params": {
+        "a": 10.33,
+        "b": 10.33,
+        "c": 10.33,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 3.8,
+      "quality": ""
+    },
+    {
+      "pdf_number": "24-0077",
+      "name": "Diggenite",
+      "formula": "Cu9S8",
+      "peaks": [
+        [
+          3.21,
+          100
+        ],
+        [
+          2.65,
+          65
+        ],
+        [
+          2.41,
+          55
+        ],
+        [
+          1.87,
+          45
+        ]
+      ],
+      "crystal_system": "Cubic",
+      "space_group": "Fd-3m",
+      "cell_params": {
+        "a": 15.26,
+        "b": 15.26,
+        "c": 15.26,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 4.0,
+      "quality": ""
+    },
+    {
+      "pdf_number": "42-1340",
+      "name": "Pyrite",
+      "formula": "FeS2",
+      "peaks": [
+        [
+          2.709,
+          100
+        ],
+        [
+          3.128,
+          85
+        ],
+        [
+          2.423,
+          55
+        ],
+        [
+          1.632,
+          45
+        ]
+      ],
+      "crystal_system": "Cubic",
+      "space_group": "Pa-3",
+      "cell_params": {
+        "a": 5.42,
+        "b": 5.42,
+        "c": 5.42,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 5.5,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "05-0566",
+      "name": "Sphalerite",
+      "formula": "ZnS",
+      "peaks": [
+        [
+          3.123,
+          100
+        ],
+        [
+          1.91,
+          50
+        ],
+        [
+          1.631,
+          35
+        ],
+        [
+          2.539,
+          25
+        ]
+      ],
+      "crystal_system": "Cubic",
+      "space_group": "F-43m",
+      "cell_params": {
+        "a": 5.41,
+        "b": 5.41,
+        "c": 5.41,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 4.5,
+      "quality": ""
+    },
+    {
+      "pdf_number": "05-0592",
+      "name": "Galena",
+      "formula": "PbS",
+      "peaks": [
+        [
+          2.969,
+          100
+        ],
+        [
+          3.429,
+          55
+        ],
+        [
+          2.119,
+          35
+        ],
+        [
+          1.756,
+          30
+        ]
+      ],
+      "crystal_system": "Cubic",
+      "space_group": "Fm-3m",
+      "cell_params": {
+        "a": 5.94,
+        "b": 5.94,
+        "c": 5.94,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 90
+      },
+      "rir": 8.0,
+      "quality": "*"
+    },
+    {
+      "pdf_number": "46-1212",
+      "name": "Corundum",
+      "formula": "Al2O3",
+      "peaks": [
+        [
+          2.085,
+          100
+        ],
+        [
+          2.552,
+          75
+        ],
+        [
+          3.479,
+          50
+        ],
+        [
+          1.74,
+          45
+        ]
+      ],
+      "crystal_system": "Trigonal",
+      "space_group": "R-3c",
+      "cell_params": {
+        "a": 4.76,
+        "b": 4.76,
+        "c": 12.99,
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 120
+      },
+      "rir": 6.5,
+      "quality": "*"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "unlocked": [
+    "novice",
+    "explorer",
+    "learner",
+    "challenge_10"
+  ],
+  "unlock_dates": {
+    "novice": "2026-04-21T15:10:20.168027",
+    "explorer": "2026-04-21T15:13:05.861411",
+    "learner": "2026-04-21T15:39:49.144510",
+    "challenge_10": "2026-04-21T15:39:49.151995"
+  },
+  "stats": {
+    "total_score": 240,
+    "max_combo": 1,
+    "projects_count": 0,
+    "completed_projects": 0,
+    "total_challenges": 20,
+    "boss_completed": 0
+  }
+}

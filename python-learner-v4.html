@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 编程学习中心 | 风变编程</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <style>
+        :root{--bg:#0a0a0f;--surface:#12121a;--card:#1a1a25;--hover:#222235;--border:rgba(255,255,255,0.06);--cyan:#00d4ff;--violet:#a78bfa;--emerald:#34d399;--amber:#fbbf24;--rose:#fb7185;--text:#e2e8f0;--muted:#64748b}
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{height:100%;overflow:hidden}
+        body{font-family:"Noto Sans SC",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+        .bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 20% 20%,rgba(0,212,255,0.06) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(167,139,250,0.06) 0%,transparent 50%)}
+        .app{display:grid;grid-template-columns:300px 1fr;height:100vh;position:relative;z-index:1}
+        .sidebar{background:linear-gradient(180deg,rgba(18,18,26,0.98),rgba(10,10,15,0.99));border-right:1px solid var(--border);display:flex;flex-direction:column}
+        .header{padding:16px;border-bottom:1px solid var(--border)}
+        .brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+        .brand-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--cyan),var(--violet));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff}
+        .brand h1{font-size:14px;font-weight:700}
+        .brand span{font-size:10px;color:var(--muted)}
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+        .stat{background:var(--card);border-radius:6px;padding:8px;text-align:center}
+        .stat-val{font-size:14px;font-weight:700;font-family:"JetBrains Mono",monospace;color:var(--cyan)}
+        .stat-label{font-size:8px;color:var(--muted);text-transform:uppercase}
+        .import-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+        .import-btn{width:100%;padding:10px;background:linear-gradient(135deg,var(--cyan),var(--violet));border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+        .import-btn:hover{box-shadow:0 4px 12px rgba(0,212,255,0.3)}
+        .nav{flex:1;overflow-y:auto;padding:10px}
+        .nav::-webkit-scrollbar{width:3px}
+        .nav::-webkit-scrollbar-thumb{background:var(--hover);border-radius:2px}
+        .target{margin-bottom:10px}
+        .target-header{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--card);border-radius:8px;cursor:pointer;border:1px solid var(--border)}
+        .target-header.open{border-color:var(--cyan)}
+        .target-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px}
+        .target-info{flex:1}
+        .target-name{font-size:11px;font-weight:600}
+        .target-meta{font-size:9px;color:var(--muted)}
+        .target-arrow{color:var(--muted);font-size:8px}
+        .levels{display:none;padding:4px 0 4px 36px}
+        .levels.open{display:block}
+        .level{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;cursor:pointer;margin-bottom:2px}
+        .level:hover{background:var(--card)}
+        .level.active{background:linear-gradient(90deg,var(--hover),transparent)}
+        .level.active::before{content:"";position:absolute;left:0;width:2px;height:60%;background:var(--cyan);border-radius:1px}
+        .level.done{opacity:.7}
+        .l-num{width:20px;height:20px;background:var(--hover);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;font-family:"JetBrains Mono",monospace;color:var(--muted)}
+        .level.active .l-num{background:var(--cyan);color:#000}
+        .level.done .l-num{background:var(--emerald);color:#fff}
+        .l-name{flex:1;font-size:10px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .l-dot{width:5px;height:5px;border-radius:50%;background:var(--hover)}
+        .level.done .l-dot{background:var(--emerald)}
+        .main{display:flex;flex-direction:column;overflow:hidden}
+        .topbar{padding:10px 18px;background:rgba(18,18,26,0.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .topbar-left{display:flex;align-items:center;gap:10px}
+        .breadcrumb{font-size:11px;color:var(--muted)}
+        .breadcrumb strong{color:var(--text)}
+        .actions{display:flex;gap:6px}
+        .btn{padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit}
+        .btn:hover{background:var(--hover)}
+        .btn-pri{background:linear-gradient(135deg,var(--cyan),var(--violet));border:none;color:#fff;font-weight:600}
+        .content{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+        .welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center}
+        .welcome-icon{width:90px;height:90px;background:linear-gradient(135deg,var(--cyan),var(--violet),var(--rose));border-radius:24px;font-size:40px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;animation:float 5s ease-in-out infinite}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        .welcome h1{font-size:22px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,var(--text),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .welcome p{font-size:12px;color:var(--muted);max-width:360px;margin-bottom:24px}
+        .cards{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;width:140px;text-align:left;cursor:pointer}
+        .card:hover{border-color:var(--cyan);transform:translateY(-2px)}
+        .card-icon{font-size:20px;margin-bottom:6px}
+        .card h3{font-size:11px;margin-bottom:2px}
+        .card p{font-size:9px;color:var(--muted)}
+        .learner{display:none;flex-direction:column;flex:1;overflow:hidden}
+        .learner.active{display:flex}
+        .mode-bar{padding:8px 18px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .tabs{display:flex;gap:4px}
+        .tab{padding:5px 10px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--muted);cursor:pointer}
+        .tab.active{background:var(--cyan);border-color:var(--cyan);color:#000}
+        .lesson-nav{display:flex;align-items:center;gap:6px}
+        .nav-btn{width:28px;height:28px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .nav-btn:disabled{opacity:.3}
+        .lesson-pos{font-size:10px;font-family:"JetBrains Mono",monospace;color:var(--muted)}
+        .panels{flex:1;overflow:hidden;position:relative}
+        .reader{display:none;height:100%}
+        .reader.active{display:flex;flex-direction:column}
+        .reader-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted)}
+        .reader-placeholder-icon{font-size:40px;margin-bottom:12px;opacity:.5}
+        .reader-placeholder p{font-size:11px}
+        .reader-iframe{flex:1;width:100%;border:none;background:#080808}
+        .python{display:none;height:100%}
+        .python.active{display:flex;flex-direction:column}
+        .pyoloader{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20}
+        .pyoloader.hidden{display:none}
+        .pyospinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:10px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .pyoloader p{color:var(--muted);font-size:11px}
+        .pyoloader .prog{margin-top:4px;font-size:9px;color:var(--cyan)}
+        .pylayout{display:flex;flex:1;overflow:hidden}
+        .editor{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border)}
+        .editor-hdr{padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .editor-title{font-size:10px;font-weight:600;color:var(--cyan)}
+        .editor-actions{display:flex;gap:4px}
+        .edbtn{padding:4px 8px;background:var(--hover);border:1px solid var(--border);border-radius:4px;font-size:9px;color:var(--muted);cursor:pointer}
+        .edbtn.run{background:var(--emerald);border-color:var(--emerald);color:#fff}
+        .code-area{flex:1;position:relative}
+        .code-textarea{width:100%;height:100%;padding:10px;background:var(--bg);border:none;color:var(--text);font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.6;resize:none;outline:none}
+        .snippets{padding:6px 12px;background:var(--card);border-top:1px solid var(--border);display:flex;align-items:center;gap:4px;overflow-x:auto}
+        .snip-label{font-size:8px;color:var(--muted);margin-right:4px}
+        .snip{padding:3px 6px;background:var(--hover);border:1px solid var(--border);border-radius:4px;font-size:8px;color:var(--muted);cursor:pointer;white-space:nowrap}
+        .snip:hover{color:var(--cyan)}
+        .output{width:40%;display:flex;flex-direction:column}
+        .output-hdr{padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .output-title{font-size:10px;font-weight:600;color:var(--violet)}
+        .output-status{font-size:8px;padding:2px 6px;border-radius:4px}
+        .output-status.ready{background:rgba(52,211,153,.15);color:var(--emerald)}
+        .output-status.loading{background:rgba(251,191,36,.15);color:var(--amber)}
+        .output-status.error{background:rgba(251,113,133,.15);color:var(--rose)}
+        .output-content{flex:1;padding:10px;overflow-y:auto;font-family:"JetBrains Mono",monospace;font-size:10px;line-height:1.6;background:var(--bg)}
+        .out-line{margin-bottom:2px}
+        .out-line.suc{color:var(--emerald)}
+        .out-line.err{color:var(--rose)}
+        .out-line.inf{color:var(--cyan)}
+        .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(60px);padding:8px 16px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:11px;transition:transform .3s;z-index:1000}
+        .toast.show{transform:translateX(-50%) translateY(0)}
+        .toast.suc{border-color:var(--emerald);color:var(--emerald)}
+        .toast.err{border-color:var(--rose);color:var(--rose)}
+        .toast.inf{border-color:var(--cyan);color:var(--cyan)}
+        @media(max-width:768px){.app{grid-template-columns:1fr}.sidebar{position:fixed;left:0;top:0;width:300px;height:100%;transform:translateX(-100%);transition:transform .3s;z-index:100}.sidebar.open{transform:translateX(0)}}
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+    <div class="bg"></div>
+    <div class="app">
+        <aside class="sidebar" id="sidebar">
+            <div class="header">
+                <div class="brand">
+                    <div class="brand-icon">🐍</div>
+                    <div><h1>风变编程</h1><span>Python 学习</span></div>
+                </div>
+                <div class="stats">
+                    <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-label">课程</div></div>
+                    <div class="stat"><div class="stat-val" id="sDone">0</div><div class="stat-label">完成</div></div>
+                    <div class="stat"><div class="stat-val" id="sPct">0%</div><div class="stat-label">进度</div></div>
+                </div>
+            </div>
+            <div class="import-section">
+                <button class="import-btn" id="btnImport">📂 选择课程文件夹</button>
+            </div>
+            <div class="nav" id="courseNav">
+                <div style="padding:30px 16px;text-align:center;color:var(--muted)">
+                    <p style="font-size:28px;margin-bottom:8px;opacity:.5">📁</p>
+                    <p style="font-size:10px">点击上方按钮<br>选择风变编程课程文件夹</p>
+                </div>
+            </div>
+        </aside>
+        <main class="main">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <div class="breadcrumb" id="breadcrumb"><span>欢迎使用</span></div>
+                </div>
+                <div class="actions">
+                    <button class="btn" id="btnHome">🏠 首页</button>
+                    <button class="btn" id="btnClear">🗑️ 清空</button>
+                </div>
+            </div>
+            <div class="content">
+                <div class="welcome" id="welcome">
+                    <div class="welcome-icon">🐍</div>
+                    <h1>Python 编程学习中心</h1>
+                    <p>选择风变编程课程文件夹，开始学习之旅</p>
+                    <div class="cards">
+                        <div class="card" id="cardImport"><div class="card-icon">📂</div><h3>导入课程</h3><p>选择课程文件夹</p></div>
+                        <div class="card" id="cardHelp"><div class="card-icon">❓</div><h3>使用指南</h3><p>了解操作方法</p></div>
+                    </div>
+                </div>
+                <div class="learner" id="learner">
+                    <div class="mode-bar">
+                        <div class="tabs">
+                            <div class="tab active" data-mode="read"><span>📖</span> 阅读</div>
+                            <div class="tab" data-mode="code"><span>🐍</span> 实操</div>
+                        </div>
+                        <div class="lesson-nav">
+                            <button class="nav-btn" id="prevBtn">◀</button>
+                            <span class="lesson-pos" id="lessonPos">0 / 0</span>
+                            <button class="nav-btn" id="nextBtn">▶</button>
+                            <button class="btn" id="btnMark">✓ 完成</button>
+                        </div>
+                    </div>
+                    <div class="panels">
+                        <div class="reader active" id="reader">
+                            <div class="reader-placeholder" id="readerPlaceholder"><div class="reader-placeholder-icon">📖</div><p>选择一个课程开始学习</p></div>
+                            <iframe class="reader-iframe" id="readerIframe" style="display:none"></iframe>
+                        </div>
+                        <div class="python" id="python">
+                            <div class="pyoloader" id="pyoloader"><div class="pyospinner"></div><p>正在加载 Python 环境...</p><p class="prog" id="pyoProg">初始化中...</p></div>
+                            <div class="pylayout">
+                                <div class="editor">
+                                    <div class="editor-hdr"><div class="editor-title">🐍 代码编辑器</div><div class="editor-actions"><button class="edbtn" id="btnClr">清空</button><button class="edbtn run" id="btnRun">▶ 运行</button></div></div>
+                                    <div class="code-area"><textarea class="code-textarea" id="codeEditor" placeholder="# 在这里编写 Python 代码&#10;print('Hello, Python!')"></textarea></div>
+                                    <div class="snippets"><span class="snip-label">片段:</span><button class="snip" data-snippet="print">print()</button><button class="snip" data-snippet="for">for</button><button class="snip" data-snippet="if">if</button><button class="snip" data-snippet="def">def</button><button class="snip" data-snippet="class">class</button></div>
+                                </div>
+                                <div class="output">
+                                    <div class="output-hdr"><div class="output-title">📤 输出控制台</div><span class="output-status loading" id="outStatus">加载中</span></div>
+                                    <div class="output-content" id="outContent"><div class="out-line inf">ℹ️ Python 环境正在加载...</div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div class="toast" id="toast"></div>
+    <input type="file" id="folderInput" webkitdirectory multiple style="display:none">
+
+    <script>
+        const courseFolders = [
+            {path:"【1】Python基础语法",name:"Python 基础语法",color:"linear-gradient(135deg,#22d3ee,#06b6d4)"},
+            {path:"【2】Python爬虫精进",name:"Python 爬虫精进",color:"linear-gradient(135deg,#a78bfa,#8b5cf6)"},
+            {path:"【3】python办公自动化",name:"办公自动化",color:"linear-gradient(135deg,#fbbf24,#f59e0b)"},
+            {path:"【4】Python数据分析实训课",name:"数据分析实训",color:"linear-gradient(135deg,#34d399,#10b981)"}
+        ];
+        const snippets = {print:"print('Hello!')",for:"for i in range(5):\n    print(i)",if:"x = 10\nif x > 5:\n    print('>5')",def:"def greet(name):\n    return f'你好，{name}！'\nprint(greet('小明'))",class:"class Person:\n    def __init__(self, name):\n        self.name = name\np = Person('小明')\nprint(p.name)"};
+        let lessons = [], currentIdx = -1, progress = {}, pyodide = null, pyodideReady = false;
+
+        loadProgress(); initPyodide(); bindEvents();
+
+        async function initPyodide() {
+            try {
+                document.getElementById('pyoProg').textContent = '下载中...';
+                pyodide = await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'});
+                pyodideReady = true;
+                document.getElementById('pyoloader').classList.add('hidden');
+                const s = document.getElementById('outStatus');
+                s.textContent = '就绪'; s.className = 'output-status ready';
+                appendOut('✅ Python 环境已就绪！', 'suc');
+            } catch (e) { document.getElementById('pyoProg').textContent = '加载失败'; }
+        }
+
+        function bindEvents() {
+            document.getElementById('btnImport').onclick = () => document.getElementById('folderInput').click();
+            document.getElementById('cardImport').onclick = () => document.getElementById('folderInput').click();
+            document.getElementById('folderInput').onchange = handleFolder;
+            document.getElementById('btnHelp').onclick = showHelp;
+            document.getElementById('btnHome').onclick = goHome;
+            document.getElementById('btnClear').onclick = clearAll;
+            document.getElementById('prevBtn').onclick = () => currentIdx > 0 && loadLesson(currentIdx - 1);
+            document.getElementById('nextBtn').onclick = () => currentIdx < lessons.length - 1 && loadLesson(currentIdx + 1);
+            document.getElementById('btnMark').onclick = markDone;
+            document.querySelectorAll('.tab').forEach(t => t.onclick = () => switchMode(t.dataset.mode));
+            document.getElementById('btnRun').onclick = runCode;
+            document.getElementById('btnClr').onclick = () => document.getElementById('codeEditor').value = '';
+            document.querySelectorAll('.snip').forEach(b => b.onclick = () => insertSnip(b.dataset.snippet));
+            document.getElementById('codeEditor').onkeydown = e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); }
+                if (e.key === 'Tab') { e.preventDefault(); const el = e.target; const s = el.selectionStart; el.value = el.value.substring(0, s) + '    ' + el.value.substring(el.selectionEnd); el.selectionStart = el.selectionEnd = s + 4; }
+            };
+        }
+
+        function handleFolder(e) {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            lessons = [];
+            const grouped = {};
+            courseFolders.forEach(c => grouped[c.path] = {config:c, files:[]});
+            files.forEach(f => {
+                const ext = f.name.split('.').pop().toLowerCase();
+                if (ext !== 'html' && ext !== 'htm') return;
+                const path = f.webkitRelativePath || '';
+                for (const c of courseFolders) {
+                    if (path.includes(c.path)) {
+                        grouped[c.path].files.push(f);
+                        break;
+                    }
+                }
+            });
+            courseFolders.forEach(c => {
+                const g = grouped[c.path];
+                if (!g || !g.files.length) return;
+                g.files.sort((a,b) => (a.name.match(/\\d+/)||[999])[0] - (b.name.match(/\\d+/)||[999])[0]);
+                g.files.forEach(f => {
+                    let name = f.name.replace(/\\.html?$/i,'').replace(/^\\d+关[-_]*/,'');
+                    if (/^[\\u0000-\\u00ff]+$/.test(name)) { try { const b=[]; for(let i=0;i<name.length;i++) b.push(name.charCodeAt(i)); name = new TextDecoder('gbk').decode(new Uint8Array(b)); } catch(e){} }
+                    lessons.push({id:'l_'+lessons.length, name, file:f, course:c.path, courseName:c.name, courseColor:c.color});
+                });
+            });
+            if (!lessons.length) { showToast('未找到 HTML 文件', 'err'); return; }
+            renderCourses(); updateStats();
+            showToast('✅ 导入成功：' + lessons.length + ' 个课程', 'suc');
+            loadLesson(0);
+        }
+
+        function renderCourses() {
+            const grouped = {};
+            lessons.forEach(l => { if (!grouped[l.course]) grouped[l.course] = {config:{name:l.courseName,color:l.courseColor}, levels:[]}; grouped[l.course].levels.push(l); });
+            let html = '';
+            Object.values(grouped).forEach((g, ti) => {
+                const done = g.levels.filter(l=>progress[l.id]).length;
+                html += '<div class="target"><div class="target-header" onclick="toggleTarget('+ti+')"><div class="target-icon" style="background:'+g.config.color+'">📚</div><div class="target-info"><div class="target-name">'+g.config.name+'</div><div class="target-meta">'+done+'/'+g.levels.length+' 已完成</div></div><span class="target-arrow">▼</span></div><div class="levels" id="levels-'+ti+'">';
+                g.levels.forEach((l, li) => {
+                    const idx = lessons.indexOf(l);
+                    html += '<div class="level'+(progress[l.id]?' done':'')+'" data-idx="'+idx+'" onclick="loadLesson('+idx+')"><div class="l-num">'+l.id.replace('l_','')+'</div><div class="l-name">'+l.name+'</div><div class="l-dot"></div></div>';
+                });
+                html += '</div></div>';
+            });
+            document.getElementById('courseNav').innerHTML = html || '<div style="padding:30px;text-align:center;color:var(--muted)">暂无课程</div>';
+        }
+
+        function toggleTarget(i) {
+            document.querySelectorAll('.target-header')[i].classList.toggle('open');
+            document.getElementById('levels-'+i).classList.toggle('open');
+        }
+
+        function updateStats() {
+            const total = lessons.length, done = lessons.filter(l=>progress[l.id]).length;
+            document.getElementById('sTotal').textContent = total;
+            document.getElementById('sDone').textContent = done;
+            document.getElementById('sPct').textContent = total ? Math.round(done/total*100)+'%' : '0%';
+        }
+
+        function loadLesson(idx) {
+            if (idx < 0 || idx >= lessons.length) return;
+            currentIdx = idx;
+            const l = lessons[idx];
+            document.querySelectorAll('.level').forEach(el => el.classList.remove('active'));
+            document.querySelector('[data-idx="'+idx+'"]').classList.add('active');
+            document.getElementById('breadcrumb').innerHTML = '<span>'+l.courseName+'</span> <strong>/</strong> <strong>'+l.name+'</strong>';
+            document.getElementById('welcome').classList.add('hidden');
+            document.getElementById('learner').classList.add('active');
+            switchMode('read');
+            document.getElementById('readerPlaceholder').style.display = 'none';
+            document.getElementById('readerIframe').style.display = 'block';
+            document.getElementById('readerIframe').src = URL.createObjectURL(l.file);
+            document.getElementById('codeEditor').value = '# ' + l.name + '\\n# 练习代码：\\n\\n';
+            document.getElementById('prevBtn').disabled = idx <= 0;
+            document.getElementById('nextBtn').disabled = idx >= lessons.length - 1;
+            document.getElementById('lessonPos').textContent = (idx+1) + ' / ' + lessons.length;
+            saveProgress();
+        }
+
+        function markDone() {
+            if (currentIdx < 0) return;
+            progress[lessons[currentIdx].id] = true;
+            saveProgress(); updateStats(); renderCourses();
+            showToast('✅ 已标记完成', 'suc');
+        }
+
+        function goHome() {
+            currentIdx = -1;
+            document.getElementById('welcome').classList.remove('hidden');
+            document.getElementById('learner').classList.remove('active');
+            document.getElementById('readerPlaceholder').style.display = 'flex';
+            document.getElementById('readerIframe').style.display = 'none';
+            document.getElementById('breadcrumb').innerHTML = '<span>欢迎使用</span>';
+        }
+
+        function clearAll() {
+            if (!confirm('确定清空？')) return;
+            lessons = []; currentIdx = -1; progress = {};
+            localStorage.removeItem('codemaster_v4');
+            document.getElementById('courseNav').innerHTML = '<div style="padding:30px 16px;text-align:center;color:var(--muted)"><p style="font-size:28px;margin-bottom:8px;opacity:.5">📁</p><p style="font-size:10px">点击上方按钮<br>选择风变编程课程文件夹</p></div>';
+            updateStats(); goHome();
+            showToast('已清空', 'inf');
+        }
+
+        function switchMode(m) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
+            document.getElementById('reader').classList.toggle('active', m === 'read');
+            document.getElementById('python').classList.toggle('active', m === 'code');
+        }
+
+        async function runCode() {
+            if (!pyodideReady) { showToast('⏳ 环境加载中...', 'inf'); return; }
+            const code = document.getElementById('codeEditor').value.trim();
+            if (!code) { showToast('请输入代码', 'inf'); return; }
+            const s = document.getElementById('outStatus');
+            s.textContent = '运行'; s.className = 'output-status loading';
+            appendOut('─'.repeat(30), '');
+            try {
+                pyodide.runPython('import sys,io\\n_stdout=io.StringIO()\\nsys.stdout=_stdout');
+                await pyodide.runPythonAsync(code);
+                const out = pyodide.runPython('_stdout.getvalue()');
+                pyodide.runPython('sys.stdout=sys.__stdout__');
+                if (out) out.split('\\n').forEach(l => l && appendOut(l, 'suc'));
+                s.textContent = '就绪'; s.className = 'output-status ready';
+            } catch (err) {
+                pyodide.runPython('sys.stdout=sys.__stdout__');
+                (err.message||String(err)).split('\\n').forEach(l => l && appendOut(l, 'err'));
+                s.textContent = '错误'; s.className = 'output-status error';
+            }
+        }
+
+        function appendOut(text, type) {
+            const d = document.createElement('div');
+            d.className = 'out-line' + (type?' '+type:'');
+            d.textContent = text;
+            const c = document.getElementById('outContent');
+            c.appendChild(d);
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function insertSnip(k) {
+            const ed = document.getElementById('codeEditor');
+            const s = snippets[k];
+            if (!s) return;
+            const pos = ed.selectionStart;
+            ed.value = ed.value.substring(0,pos) + '\\n' + s + '\\n' + ed.value.substring(ed.selectionEnd);
+            ed.focus();
+        }
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast' + (type?' '+type:'');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function showHelp() { alert('📖 使用指南\\n\\n1. 点击「📂 选择课程文件夹」\\n2. 选择文件夹：\\n   D:\\\\百度网盘下载\\\\风\\\\风变：语法+爬虫+自动化+分析\\\\风变：语法+爬虫+自动化+分析\\n\\n3. 应用会自动扫描所有 HTML 课程文件\\n\\n4. 两种学习模式：\\n   📖 阅读 - 查看课程内容\\n   🐍 实操 - Python 交互编程\\n\\n5. 快捷键：\\n   Ctrl+Enter - 运行代码'); }
+
+        function saveProgress() { localStorage.setItem('codemaster_v4', JSON.stringify({progress})); }
+        function loadProgress() { try { const d = JSON.parse(localStorage.getItem('codemaster_v4')||'{}'); progress = d.progress||{}; } catch(e) { progress = {}; } }
+    </script>
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python 学习平台 - 风变编程</title>
+<!-- CodeMirror -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/pythonidea.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<!-- Pyodide -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);min-height:100vh;color:#e8e8e8}
+.app{display:flex;height:100vh}
+
+/* 左侧导航 */
+.sidebar{width:280px;background:rgba(0,0,0,0.4);border-right:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;overflow:hidden}
+.logo{padding:20px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.logo h1{font-size:1.3rem;background:linear-gradient(90deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:.75rem;color:#888;margin-top:4px}
+.stats{padding:12px;margin:12px;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(123,44,191,0.15));border-radius:10px;border:1px solid rgba(255,255,255,0.1)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{text-align:center}
+.stat b{font-size:1.1rem;color:#00d4ff}
+.stat small{font-size:.6rem;color:#aaa}
+.course-list{flex:1;overflow-y:auto;padding:10px}
+.course-item{margin-bottom:8px}
+.course-header{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.08);border-radius:8px;cursor:pointer;transition:.3s}
+.course-header:hover{background:rgba(255,255,255,0.15)}
+.course-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.course-info{flex:1}
+.course-name{font-weight:600;font-size:.85rem}
+.course-count{font-size:.65rem;color:#888}
+.course-arrow{transition:.3s;color:#666;font-size:.75rem}
+.course-arrow.open{transform:rotate(90deg)}
+.chapter-list{max-height:0;overflow:hidden;transition:max-height .3s;margin-left:8px}
+.chapter-list.open{max-height:2000px}
+.chapter-item{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:.8rem;color:#bbb;margin-top:3px;transition:.2s}
+.chapter-item:hover{background:rgba(0,212,255,0.15);color:#fff}
+.chapter-item.active{background:rgba(0,212,255,0.25);color:#00d4ff}
+
+/* 中间内容区 */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:15px;gap:15px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:rgba(0,0,0,0.3);border-radius:10px}
+.current-title{font-size:.9rem;color:#aaa}
+.current-title span{color:#00d4ff;font-weight:600}
+.mode-tabs{display:flex;gap:5px}
+.mode-tab{padding:8px 20px;border-radius:6px;cursor:pointer;font-size:.85rem;transition:.3s;background:rgba(255,255,255,0.1)}
+.mode-tab:hover{background:rgba(255,255,255,0.2)}
+.mode-tab.active{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}
+
+.content-area{flex:1;display:flex;gap:15px;overflow:hidden}
+
+/* 学习视图 */
+.study-view{flex:1;display:none;flex-direction:column}
+.study-view.active{display:flex}
+.study-frame{flex:1;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.study-frame iframe{width:100%;height:100%;border:none;background:#fff}
+
+/* 练习视图 */
+.practice-view{flex:1;display:none;flex-direction:column;gap:15px}
+.practice-view.active{display:flex}
+
+/* 练习内容区 */
+.practice-content{flex:1;display:flex;gap:15px;overflow:hidden}
+.exercises-panel{width:300px;background:rgba(0,0,0,0.3);border-radius:12px;padding:15px;overflow-y:auto}
+.exercises-panel h3{font-size:.9rem;color:#aaa;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.exercise-item{padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:10px;cursor:pointer;transition:.2s}
+.exercise-item:hover{background:rgba(255,255,255,0.1)}
+.exercise-item.active{background:rgba(0,212,255,0.2);border:1px solid rgba(0,212,255,0.4)}
+.exercise-title{font-size:.85rem;color:#ddd;margin-bottom:6px}
+.exercise-difficulty{font-size:.7rem;color:#888}
+.exercise-difficulty span{padding:2px 6px;border-radius:4px;margin-right:5px}
+.diff-1{background:rgba(76,175,80,0.3);color:#4caf50}
+.diff-2{background:rgba(255,152,0,0.3);color:#ff9800}
+.diff-3{background:rgba(255,87,34,0.3);color:#ff5722}
+.diff-4{background:rgba(156,39,176,0.3);color:#9c27b0}
+
+/* 编辑器区域 */
+.editor-panel{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0}
+.editor-header{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:rgba(0,0,0,0.4);border-radius:10px 10px 0 0}
+.editor-title{color:#ccc;font-size:.85rem}
+.run-btn{padding:8px 20px;background:linear-gradient(135deg,#00d4ff,#7b2cbf);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.8rem;transition:.3s}
+.run-btn:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(0,212,255,0.4)}
+.editor-wrap{flex:1;background:#1e1e1e;border-radius:0 0 10px 10px;overflow:hidden}
+.CodeMirror{height:100%;font-family:Consolas,Monaco,monospace;font-size:14px}
+.output-panel{height:120px;background:rgba(0,0,0,0.4);border-radius:10px;display:flex;flex-direction:column}
+.output-header{padding:8px 15px;background:rgba(255,255,255,0.05);border-radius:10px 10px 0 0;display:flex;justify-content:space-between;color:#aaa;font-size:.8rem}
+.output-content{flex:1;padding:10px 15px;font-family:Consolas,Monaco,monospace;font-size:13px;color:#d4d4d4;overflow-y:auto;white-space:pre-wrap}
+.output-status{font-size:.7rem;padding:3px 8px;border-radius:4px}
+.status-ready{background:rgba(76,175,80,0.3);color:#4caf50}
+.status-loading{background:rgba(255,152,0,0.3);color:#ff9800}
+.status-error{background:rgba(244,67,54,0.3);color:#f44336}
+
+/* AI 助手面板 */
+.ai-panel{width:320px;background:rgba(0,0,0,0.4);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.ai-header{padding:15px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center}
+.ai-header h3{font-size:.9rem;color:#ccc;display:flex;align-items:center;gap:8px}
+.ai-status{font-size:.7rem;padding:3px 8px;border-radius:4px}
+.ai-status.online{background:rgba(76,175,80,0.3);color:#4caf50}
+.ai-status.offline{background:rgba(244,67,54,0.3);color:#f44336}
+.ai-chat{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:10px}
+.ai-message{padding:12px 15px;border-radius:12px;font-size:.85rem;max-width:90%}
+.ai-message.user{background:linear-gradient(135deg,#00d4ff,#0099cc);align-self:flex-end;border-bottom-right-radius:2px}
+.ai-message.ai{background:rgba(255,255,255,0.1);align-self:flex-start;border-bottom-left-radius:2px}
+.ai-input{padding:15px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:10px}
+.ai-input input{flex:1;padding:10px 15px;background:rgba(255,255,255,0.1);border:none;border-radius:8px;color:#fff;font-size:.85rem;outline:none}
+.ai-input button{padding:10px 20px;background:linear-gradient(135deg,#00d4ff,#7b2cbf);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.8rem}
+
+/* Toast */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);padding:12px 24px;background:rgba(0,0,0,0.9);border-radius:8px;font-size:.9rem;opacity:0;transition:.3s;z-index:1000}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* 滚动条 */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- 左侧导航 -->
+<aside class="sidebar">
+<div class="logo"><h1>🐍 Python学习</h1><p>风变编程 · 48章课程</p></div>
+<div class="stats"><div class="stats-grid">
+<div class="stat"><b>4</b><small>课程</small></div>
+<div class="stat"><b>48</b><small>章节</small></div>
+<div class="stat"><b id="progressCount">0</b><small>已学</small></div>
+</div></div>
+<div class="course-list" id="courseList"></div>
+</aside>
+
+<!-- 中间内容区 -->
+<main class="main">
+<div class="toolbar">
+<div class="current-title">当前：<span id="currentTitle">请选择课程</span></div>
+<div class="mode-tabs">
+<div class="mode-tab active" onclick="switchMode('study')">📖 学习</div>
+<div class="mode-tab" onclick="switchMode('practice')">📝 练习</div>
+</div>
+</div>
+
+<div class="content-area">
+<!-- 学习视图 -->
+<div class="study-view active" id="studyView">
+<div class="study-frame"><iframe id="studyFrame"></iframe></div>
+</div>
+
+<!-- 练习视图 -->
+<div class="practice-view" id="practiceView">
+<div class="practice-content">
+<div class="exercises-panel" id="exercisesPanel">
+<h3>📋 练习题库</h3>
+<div id="exercisesList"></div>
+</div>
+
+<div class="editor-panel">
+<div class="editor-header">
+<div class="editor-title">🐍 Python 代码编辑器 <small>(Ctrl+Enter 运行)</small></div>
+<button class="run-btn" onclick="runPython()">▶ 运行</button>
+</div>
+<div class="editor-wrap">
+<textarea id="codeEditor"># 在这里编写 Python 代码
+print("Hello, Python!")
+</textarea>
+</div>
+<div class="output-panel">
+<div class="output-header">
+<span>📤 输出结果</span>
+<span class="output-status status-loading" id="outputStatus">等待运行</span>
+</div>
+<div class="output-content" id="outputContent">等待输出...</div>
+</div>
+</div>
+
+<div class="ai-panel">
+<div class="ai-header">
+<h3>🤖 AI 助手 <span class="ai-status offline" id="aiStatus">离线</span></h3>
+</div>
+<div class="ai-chat" id="aiChat">
+<div class="ai-message ai">你好！我是 AI 助手，可以帮助你解答 Python 问题。有什么不会的可以问我！</div>
+</div>
+<div class="ai-input">
+<input type="text" id="aiInput" placeholder="输入问题..." onkeypress="if(event.key==='Enter')askAI()">
+<button onclick="askAI()">发送</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// 课程数据
+const courseData = {
+basePath: "D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析",
+courses: [
+{name:"【1】Python基础语法",icon:"📚",color:"linear-gradient(135deg,#00d4ff,#0099cc)",chapters:[
+{id:"1-1",name:"千寻的名字",f:"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\0关-千寻的名字.html"},
+{id:"1-2",name:"萌新的进化",f:"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\1关-萌新的进化.html"},
+{id:"1-3",name:"灭霸的选择",f:"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\2关-灭霸的选择.html"},
+{id:"1-4",name:"霍格沃兹的来信",f:"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\3关-霍格沃兹的来信.html"},
+{id:"1-5",name:"收纳的艺术",f:"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\4关-收纳的艺术.html"},
+{id:"1-6",name:"消灭该怎么的重复（上）",f:"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\5关-消灭该怎么的重复（上）.html"},
+{id:"1-7",name:"消灭该怎么的重复（下）",f:"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\6关-消灭该怎么的重复（下）.html"},
+{id:"1-8",name:"小游戏大学问",f:"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\7关-小游戏大学问.html"},
+{id:"1-9",name:"编程学习的两大瓶颈",f:"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\8关-编程学习的两大瓶颈.html"},
+{id:"1-10",name:"喊出我的名字",f:"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\9关-喊出我的名字.html"},
+{id:"1-11",name:"田忌赛马",f:"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\10关-田忌赛马.html"},
+{id:"1-12",name:"杀死那只机生虫",f:"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\11关-杀死那只机生虫.html"},
+{id:"1-13",name:"我有一个机器人（上）",f:"【1】Python基础语法\\12~14关：第4个小目标：学会找对象\\12关-我有一个机器人（上）.html"},
+{id:"1-14",name:"我有一个机器人（下）",f:"【1】Python基础语法\\12~14关：第4个小目标：学会找对象\\13关-我有一个机器人（下）.html"},
+{id:"1-15",name:"命中注定我克你",f:"【1】Python基础语法\\12~14关：第4个小目标：学会找对象\\14关-命中注定我克你.html"},
+{id:"1-16",name:"计算机的新华字典",f:"【1】Python基础语法\\15~17关：第5个小目标：用Python给朋友发个邮件\\15关-计算机的新华字典.html"},
+{id:"1-17",name:"哆啦A梦的百宝箱",f:"【1】Python基础语法\\15~17关：第5个小目标：用Python给朋友发个邮件\\16关-哆啦A梦的百宝箱.html"},
+{id:"1-18",name:"邮件还能这么发",f:"【1】Python基础语法\\15~17关：第5个小目标：用Python给朋友发个邮件\\17关-邮件还能这么发.html"},
+{id:"1-19",name:"需求你造吗？我造",f:"【1】Python基础语法\\18~19关：第6个小目标：完成一个迷你产品\\18关-需求你造吗？我造.html"},
+{id:"1-20",name:"高效偷懒的正确姿势",f:"【1】Python基础语法\\18~19关：第6个小目标：完成一个迷你产品\\19关-高效偷懒的正确姿势.html"}
+]},
+{name:"【2】Python爬虫精进",icon:"🕷️",color:"linear-gradient(135deg,#ff6b6b,#ee5a24)",chapters:[
+{id:"2-1",name:"重新定义上网冲浪",f:"【2】Python爬虫精进\\0~1关：第1个小目标：初窥门径\\0关-重新定义上网冲浪.html"},
+{id:"2-2",name:"我也可以写个网页",f:"【2】Python爬虫精进\\0~1关：第1个小目标：初窥门径\\1关-我也可以写个网页.html"},
+{id:"2-3",name:"爬虫初体验",f:"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\2关-爬虫初体验.html"},
+{id:"2-4",name:"解密吴氏私厨",f:"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\3关-解密吴氏私厨.html"},
+{id:"2-5",name:"寻找周杰伦",f:"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\4关-寻找周杰伦.html"},
+{id:"2-6",name:"狂热粉丝",f:"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\5关-狂热粉丝.html"},
+{id:"2-7",name:"爬到的数据存哪里？",f:"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\6关-爬到的数据存哪里？.html"},
+{id:"2-8",name:"复习：温故而知新",f:"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\7关-复习：温故而知新.html"}
+]},
+{name:"【3】python办公自动化",icon:"🤖",color:"linear-gradient(135deg,#4caf50,#2e7d32)",chapters:[
+{id:"3-1",name:"导学课：快速获取文件名",f:"【3】python办公自动化\\第1关：导学课：快速获取文件名\\风变编程.html"},
+{id:"3-2",name:"txt文件筛选与读写",f:"【3】python办公自动化\\第2关：初入职场：txt文件筛选与读写\\风变编程.html"},
+{id:"3-3",name:"openpyx基础知识",f:"【3】python办公自动化\\第3关：Python,Excle：openpyx基础知识\\风变编程.html"}
+]},
+{name:"【4】Python数据分析",icon:"📊",color:"linear-gradient(135deg,#9c27b0,#7b1fa2)",chapters:[
+{id:"4-1",name:"数据的世界",f:"【4】Python数据分析实训课\\第1关 数据的世界：数据探索\\风变编程.html"},
+{id:"4-2",name:"三问三答",f:"【4】Python数据分析实训课\\第2关 三问三答：数据分析1\\风变编程.html"}
+]}
+]};
+
+// 练习题库
+const exercisesDB = {
+"1-1":{difficulty:1,title:"print()函数和变量",items:[
+{q:"使用print()输出Hello Python",a:"print('Hello Python')",hint:"使用单引号或双引号"},
+{q:"定义变量name='小明'并打印欢迎",a:"name = '小明'\nprint('欢迎', name)",hint:"用逗号分隔输出"},
+{q:"计算10+20并打印",a:"print(10 + 20)",hint:"直接计算"}
+]},
+"1-2":{difficulty:1,title:"数据类型与转换",items:[
+{q:"将'100'转为整数加50",a:"num = int('100')\nprint(num + 50)",hint:"使用int()函数"},
+{q:"数字88转为字符串拼接",a:"age = 88\nprint('年龄:' + str(age))",hint:"使用str()函数"}
+]},
+"1-3":{difficulty:2,title:"条件判断if/else",items:[
+{q:"如果age>=18打印'成年'否则'未成年'",a:"age = 20\nif age >= 18:\n    print('成年')\nelse:\n    print('未成年')",hint:"if...else结构"},
+{q:"成绩等级判断",a:"score = 85\nif score >= 90: print('优秀')\nelif score >= 80: print('良好')\nelse: print('及格')",hint:"使用if...elif"}
+]},
+"1-5":{difficulty:2,title:"列表基本操作",items:[
+{q:"创建列表并添加'葡萄'",a:"fruits = ['苹果','香蕉']\nfruits.append('葡萄')\nprint(fruits)",hint:"使用append()"},
+{q:"获取第2个元素",a:"fruits = ['苹果','香蕉','橙子']\nprint(fruits[1])",hint:"索引从0开始"}
+]},
+"1-6":{difficulty:2,title:"for循环",items:[
+{q:"打印1-5",a:"for i in range(1,6):\n    print(i)",hint:"range(1,6)生成1-5"},
+{q:"计算1+2+3+4+5",a:"total = 0\nfor i in range(1,6):\n    total += i\nprint(total)",hint:"累加求和"}
+]},
+"1-8":{difficulty:3,title:"函数定义",items:[
+{q:"定义say_hello(name)函数",a:"def say_hello(name):\n    return f'你好，{name}！'\n\nprint(say_hello('小明'))",hint:"使用def定义"},
+{q:"定义add(a,b)求和",a:"def add(a, b):\n    return a + b\n\nprint(add(3, 5))",hint:"返回值"}
+]},
+"1-12":{difficulty:4,title:"类和对象",items:[
+{q:"定义Person类(name,age)",a:"class Person:\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\n\np = Person('小明',20)\nprint(p.name)",hint:"__init__初始化"}
+]}
+};
+
+let progress = JSON.parse(localStorage.getItem("windlearn_progress") || "{}");
+let currentCourse = null, currentChapter = null;
+let currentExercise = null;
+let pyodide = null;
+let editor = null;
+let aiModel = "gemini-3-flash-preview";
+
+function init() {
+    renderCourseList();
+    initEditor();
+    checkAI();
+}
+
+// 渲染课程列表
+function renderCourseList() {
+    const cl = document.getElementById("courseList");
+    cl.innerHTML = "";
+    courseData.courses.forEach((c, ci) => {
+        let html = `<div class="course-item">
+            <div class="course-header" onclick="toggleCourse(${ci})">
+                <div class="course-icon" style="background:${c.color}">${c.icon}</div>
+                <div class="course-info">
+                    <div class="course-name">${c.name}</div>
+                    <div class="course-count">${c.chapters.length} 章</div>
+                </div>
+                <span class="course-arrow">▶</span>
+            </div>
+            <div class="chapter-list">${c.chapters.map((ch, i) => 
+                `<div class="chapter-item" onclick="loadChapter(${ci}, ${i})" data-cid="${ch.id}">${ch.name}</div>`
+            ).join("")}</div>
+        </div>`;
+        cl.innerHTML += html;
+    });
+}
+
+function toggleCourse(idx) {
+    document.querySelectorAll(".course-arrow")[idx].classList.toggle("open");
+    document.querySelectorAll(".chapter-list")[idx].classList.toggle("open");
+}
+
+function loadChapter(ci, chi) {
+    const c = courseData.courses[ci];
+    const ch = c.chapters[chi];
+    currentCourse = ci;
+    currentChapter = chi;
+    
+    document.querySelectorAll(".chapter-item").forEach(el => el.classList.remove("active"));
+    document.querySelector(`[data-cid="${ch.id}"]`).classList.add("active");
+    
+    document.getElementById("currentTitle").textContent = ch.name;
+    
+    const url = "file:///" + courseData.basePath + "/" + ch.f.replace(/\\/g, "/");
+    document.getElementById("studyFrame").src = url;
+    
+    // 加载练习题
+    loadExercises(ch.id);
+    
+    // 保存进度
+    progress[ch.id] = true;
+    localStorage.setItem("windlearn_progress", JSON.stringify(progress));
+    document.getElementById("progressCount").textContent = Object.keys(progress).length;
+    
+    showToast("已加载: " + ch.name);
+}
+
+// 加载练习题
+function loadExercises(chapterId) {
+    const el = document.getElementById("exercisesList");
+    const ex = exercisesDB[chapterId];
+    
+    if (!ex) {
+        el.innerHTML = `<div class="exercise-item">
+            <div class="exercise-title">暂无练习题</div>
+            <div class="exercise-difficulty">请尝试其他章节</div>
+        </div>`;
+        return;
+    }
+    
+    const diffLabels = {1:"⭐",2:"⭐⭐",3:"⭐⭐⭐",4:"⭐⭐⭐⭐"};
+    el.innerHTML = `<div class="exercise-item active" onclick="selectExercise(this, '${ex.items[0].q}', '${ex.items[0].a}', '${ex.items[0].hint || ''}')">
+        <div class="exercise-title">${ex.title}</div>
+        <div class="exercise-difficulty"><span class="diff-${ex.difficulty}">${diffLabels[ex.difficulty]}</span> ${ex.items.length} 题</div>
+    </div>` + ex.items.slice(1).map(item => `
+        <div class="exercise-item" onclick="selectExercise(this, '${item.q}', '${item.a}', '${item.hint || ''}')">
+            <div class="exercise-title">${item.q}</div>
+            <div class="exercise-difficulty"><span class="diff-${ex.difficulty}">${diffLabels[ex.difficulty]}</span> 编程题</div>
+        </div>
+    `).join("");
+}
+
+function selectExercise(el, q, a, hint) {
+    document.querySelectorAll(".exercise-item").forEach(e => e.classList.remove("active"));
+    el.classList.add("active");
+    currentExercise = {question: q, answer: a, hint: hint};
+    editor.setValue(`# 题目: ${q}\n# 提示: ${hint || '暂无提示'}\n\n`);
+    document.getElementById("outputContent").textContent = "请编写代码解答上述题目...";
+}
+
+// 切换学习/练习模式
+function switchMode(mode) {
+    document.querySelectorAll(".mode-tab").forEach(t => {
+        t.classList.toggle("active", t.textContent.includes(mode === "study" ? "学习" : "练习"));
+    });
+    document.getElementById("studyView").classList.toggle("active", mode === "study");
+    document.getElementById("practiceView").classList.toggle("active", mode === "practice");
+}
+
+// 初始化编辑器
+function initEditor() {
+    editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+        mode: "python",
+        theme: "pythonidea",
+        lineNumbers: true,
+        indentUnit: 4,
+        autoCloseBrackets: true
+    });
+    
+    editor.addKeyMap({"Ctrl-Enter": runPython, "Cmd-Enter": runPython});
+    
+    initPyodide();
+}
+
+async function initPyodide() {
+    try {
+        pyodide = await loadPyodide();
+        showToast("Python 环境已就绪");
+    } catch(e) {
+        console.log("Pyodide load error:", e);
+    }
+}
+
+async function runPython() {
+    const outputContent = document.getElementById("outputContent");
+    const outputStatus = document.getElementById("outputStatus");
+    
+    if (!pyodide) {
+        outputContent.textContent = "Python 环境未就绪...";
+        return;
+    }
+    
+    outputStatus.textContent = "运行中";
+    outputStatus.className = "output-status status-loading";
+    outputContent.textContent = ">>> " + editor.getValue().split("\n").join("\n>>> ") + "\n\n";
+    
+    try {
+        await pyodide.runPythonAsync("import sys; from io import StringIO; sys.stdout = StringIO()");
+        await pyodide.runPythonAsync(editor.getValue());
+        const output = pyodide.runPython("sys.stdout.getvalue()");
+        outputContent.textContent += output || "(执行完成)";
+        outputStatus.textContent = "完成";
+        outputStatus.className = "output-status status-ready";
+    } catch(e) {
+        outputContent.textContent += "\n❌ 错误: " + e.message;
+        outputStatus.textContent = "错误";
+        outputStatus.className = "output-status status-error";
+    }
+}
+
+// AI 功能
+async function checkAI() {
+    try {
+        const res = await fetch("http://localhost:11434/api/tags");
+        if (res.ok) {
+            document.getElementById("aiStatus").textContent = "在线";
+            document.getElementById("aiStatus").className = "ai-status online";
+        }
+    } catch(e) {
+        document.getElementById("aiStatus").textContent = "离线";
+        document.getElementById("aiStatus").className = "ai-status offline";
+    }
+}
+
+async function askAI() {
+    const input = document.getElementById("aiInput");
+    const question = input.value.trim();
+    if (!question) return;
+    
+    const chat = document.getElementById("aiChat");
+    chat.innerHTML += `<div class="ai-message user">${question}</div>`;
+    chat.innerHTML += `<div class="ai-message ai">正在思考...</div>`;
+    input.value = "";
+    chat.scrollTop = chat.scrollHeight;
+    
+    // 构建上下文提示
+    let context = `你是Python学习助手。当前课程: ${currentChapter !== null ? courseData.courses[currentCourse]?.chapters[currentChapter]?.name || '未知' : '未选择'}`;
+    if (currentExercise) {
+        context += `\n当前练习题: ${currentExercise.question}`;
+        context += `\n参考代码: ${currentExercise.answer}`;
+    }
+    
+    try {
+        const res = await fetch("http://localhost:11434/api/generate", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                model: aiModel,
+                prompt: context + "\n\n用户问题: " + question + "\n\n请用中文回答，代码用```python包裹",
+                stream: false
+            })
+        });
+        
+        const data = await res.json();
+        const answer = data.response || "AI 响应失败";
+        
+        chat.removeChild(chat.lastChild);
+        chat.innerHTML += `<div class="ai-message ai">${answer.replace(/\n/g, "<br>")}</div>`;
+    } catch(e) {
+        chat.removeChild(chat.lastChild);
+        chat.innerHTML += `<div class="ai-message ai">❌ AI 连接失败: ${e.message}</div>`;
+    }
+    
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

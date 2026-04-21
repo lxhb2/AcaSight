@@ -1,0 +1,391 @@
+{
+  "sample": "Y-2",
+  "data_file": "F:\\xwechat_files\\wxid_02k0z8c1gb8i22_115d\\msg\\file\\2026-04\\Y-2.txt",
+  "analysis_time_s": 1.62,
+  "data_summary": {
+    "n_points": 7001,
+    "two_theta_range": [
+      10.0,
+      80.0
+    ],
+    "step_size_deg": 0.01,
+    "max_intensity_raw": 2730.0,
+    "max_intensity_net": 1768.0850960186592,
+    "n_peaks_detected": 219
+  },
+  "preprocessing": {
+    "smoothing": "SG(w=9, p=3)",
+    "kalpha2_removal": true,
+    "background_method": "rolling"
+  },
+  "peaks": [
+    {
+      "two_theta": 25.46,
+      "intensity": 2683.35,
+      "norm": 1.0,
+      "prominence": 0.9842,
+      "width": 0.0
+    },
+    {
+      "two_theta": 33.19,
+      "intensity": 1462.65,
+      "norm": 0.5451,
+      "prominence": 0.5297,
+      "width": 0.0
+    },
+    {
+      "two_theta": 35.66,
+      "intensity": 1004.37,
+      "norm": 0.3743,
+      "prominence": 0.3595,
+      "width": 0.0
+    },
+    {
+      "two_theta": 26.66,
+      "intensity": 860.53,
+      "norm": 0.3207,
+      "prominence": 0.2995,
+      "width": 0.0
+    },
+    {
+      "two_theta": 31.37,
+      "intensity": 701.4,
+      "norm": 0.2614,
+      "prominence": 0.2411,
+      "width": 0.0
+    },
+    {
+      "two_theta": 40.85,
+      "intensity": 627.43,
+      "norm": 0.2338,
+      "prominence": 0.2211,
+      "width": 0.0
+    },
+    {
+      "two_theta": 54.11,
+      "intensity": 544.69,
+      "norm": 0.203,
+      "prominence": 0.1918,
+      "width": 0.0
+    },
+    {
+      "two_theta": 24.18,
+      "intensity": 514.13,
+      "norm": 0.1916,
+      "prominence": 0.1687,
+      "width": 0.0
+    },
+    {
+      "two_theta": 38.66,
+      "intensity": 481.2,
+      "norm": 0.1793,
+      "prominence": 0.1659,
+      "width": 0.0
+    },
+    {
+      "two_theta": 49.5,
+      "intensity": 476.29,
+      "norm": 0.1775,
+      "prominence": 0.1649,
+      "width": 0.0
+    },
+    {
+      "two_theta": 48.71,
+      "intensity": 397.8,
+      "norm": 0.1482,
+      "prominence": 0.1261,
+      "width": 0.0
+    },
+    {
+      "two_theta": 62.47,
+      "intensity": 375.78,
+      "norm": 0.14,
+      "prominence": 0.1296,
+      "width": 0.0
+    },
+    {
+      "two_theta": 64.03,
+      "intensity": 337.84,
+      "norm": 0.1259,
+      "prominence": 0.1117,
+      "width": 0.0
+    },
+    {
+      "two_theta": 55.76,
+      "intensity": 292.71,
+      "norm": 0.1091,
+      "prominence": 0.0984,
+      "width": 0.0
+    },
+    {
+      "two_theta": 20.86,
+      "intensity": 236.07,
+      "norm": 0.088,
+      "prominence": 0.0697,
+      "width": 0.0
+    },
+    {
+      "two_theta": 62.59,
+      "intensity": 228.77,
+      "norm": 0.0853,
+      "prominence": 0.0063,
+      "width": 0.0
+    },
+    {
+      "two_theta": 52.25,
+      "intensity": 227.76,
+      "norm": 0.0849,
+      "prominence": 0.0719,
+      "width": 0.0
+    },
+    {
+      "two_theta": 64.21,
+      "intensity": 221.89,
+      "norm": 0.0827,
+      "prominence": 0.0078,
+      "width": 0.0
+    },
+    {
+      "two_theta": 43.37,
+      "intensity": 219.93,
+      "norm": 0.082,
+      "prominence": 0.0688,
+      "width": 0.0
+    },
+    {
+      "two_theta": 48.84,
+      "intensity": 219.68,
+      "norm": 0.0819,
+      "prominence": 0.0257,
+      "width": 0.0
+    },
+    {
+      "two_theta": 36.32,
+      "intensity": 218.06,
+      "norm": 0.0813,
+      "prominence": 0.0526,
+      "width": 0.0
+    },
+    {
+      "two_theta": 41.34,
+      "intensity": 212.27,
+      "norm": 0.0791,
+      "prominence": 0.0533,
+      "width": 0.0
+    },
+    {
+      "two_theta": 31.96,
+      "intensity": 209.38,
+      "norm": 0.078,
+      "prominence": 0.0551,
+      "width": 0.0
+    },
+    {
+      "two_theta": 55.9,
+      "intensity": 196.72,
+      "norm": 0.0733,
+      "prominence": 0.0239,
+      "width": 0.0
+    },
+    {
+      "two_theta": 28.64,
+      "intensity": 183.72,
+      "norm": 0.0685,
+      "prominence": 0.0511,
+      "width": 0.0
+    },
+    {
+      "two_theta": 45.48,
+      "intensity": 176.26,
+      "norm": 0.0657,
+      "prominence": 0.0544,
+      "width": 0.0
+    },
+    {
+      "two_theta": 22.94,
+      "intensity": 171.02,
+      "norm": 0.0637,
+      "prominence": 0.0447,
+      "width": 0.0
+    },
+    {
+      "two_theta": 57.77,
+      "intensity": 154.79,
+      "norm": 0.0577,
+      "prominence": 0.0454,
+      "width": 0.0
+    },
+    {
+      "two_theta": 49.18,
+      "intensity": 153.97,
+      "norm": 0.0574,
+      "prominence": 0.0186,
+      "width": 0.0
+    },
+    {
+      "two_theta": 57.63,
+      "intensity": 147.79,
+      "norm": 0.0551,
+      "prominence": 0.0056,
+      "width": 0.0
+    }
+  ],
+  "phases_identified": [
+    {
+      "name": "Cu2CO3(OH)2_Malachite_???",
+      "formula": "Cu?CO?(OH)?",
+      "system": "Monoclinic",
+      "n_matched_peaks": 14,
+      "score": 1.0762,
+      "description": "??? ? ????????????????"
+    },
+    {
+      "name": "CuS_Covellite_????",
+      "formula": "CuS",
+      "system": "Hexagonal",
+      "n_matched_peaks": 11,
+      "score": 0.8702,
+      "description": "???? ? CuS???????????????"
+    },
+    {
+      "name": "gamma-FeOOH_Lepidocrocite_???",
+      "formula": "?-FeOOH",
+      "system": "Orthorhombic",
+      "n_matched_peaks": 12,
+      "score": 0.855,
+      "description": "??? ? ?-FeOOH????????????????"
+    },
+    {
+      "name": "CoOOH_Heterogenite_???",
+      "formula": "CoOOH",
+      "system": "Trigonal",
+      "n_matched_peaks": 6,
+      "score": 0.8125,
+      "description": "??? ? Co(III)?????????????"
+    },
+    {
+      "name": "CaSO4.2H2O_Gypsum_??",
+      "formula": "CaSO??2H?O",
+      "system": "Monoclinic",
+      "n_matched_peaks": 14,
+      "score": 0.7739,
+      "description": "?? ? ??????????????????"
+    },
+    {
+      "name": "FeS2_Pyrite_???",
+      "formula": "FeS?",
+      "system": "Cubic",
+      "n_matched_peaks": 11,
+      "score": 0.765,
+      "description": "??? ? ?????????????????"
+    },
+    {
+      "name": "(Mg,Fe)5Al2Si3O10_Clinochlore_????",
+      "formula": "(Mg,Fe)?Al?Si?O??",
+      "system": "Monoclinic",
+      "n_matched_peaks": 12,
+      "score": 0.714,
+      "description": "???? ? ???????????????"
+    },
+    {
+      "name": "Al2SiO5_Andalusite_???",
+      "formula": "Al?SiO?",
+      "system": "Orthorhombic",
+      "n_matched_peaks": 15,
+      "score": 0.6891,
+      "description": "??? ? ??????????????"
+    },
+    {
+      "name": "Al2SiO5_Kyanite_???",
+      "formula": "Al?SiO?",
+      "system": "Triclinic",
+      "n_matched_peaks": 11,
+      "score": 0.6692,
+      "description": "??? ? ???????????????"
+    },
+    {
+      "name": "Cu2O_Cuprite_???",
+      "formula": "Cu?O",
+      "system": "Cubic",
+      "n_matched_peaks": 7,
+      "score": 0.6625,
+      "description": "??? ? ???????????????"
+    },
+    {
+      "name": "Fe2O3_Hematite_???",
+      "formula": "Fe?O?",
+      "system": "Trigonal",
+      "n_matched_peaks": 17,
+      "score": 0.6569,
+      "description": "??? ? ?????????????????"
+    },
+    {
+      "name": "CaMg(CO3)2_Dolomite_???",
+      "formula": "CaMg(CO?)?",
+      "system": "Trigonal",
+      "n_matched_peaks": 11,
+      "score": 0.5937,
+      "description": "??? ? ???????????????"
+    },
+    {
+      "name": "Fe3O4_Magnetite_???",
+      "formula": "Fe?O?",
+      "system": "Cubic (Spinel)",
+      "n_matched_peaks": 14,
+      "score": 0.4517,
+      "description": "??? ? Fe(II,III)???????????????"
+    },
+    {
+      "name": "alpha-FeOOH_Goethite_???",
+      "formula": "?-FeOOH",
+      "system": "Orthorhombic",
+      "n_matched_peaks": 11,
+      "score": 0.431,
+      "description": "??? ? ?????????????????"
+    },
+    {
+      "name": "CaCO3_Calcite_???",
+      "formula": "CaCO?",
+      "system": "Trigonal",
+      "n_matched_peaks": 12,
+      "score": 0.418,
+      "description": "??? ? ??????????????"
+    },
+    {
+      "name": "SiO2_Quartz_??",
+      "formula": "SiO?",
+      "system": "Trigonal",
+      "n_matched_peaks": 15,
+      "score": 0.3741,
+      "description": "?? ? ?????????????"
+    }
+  ],
+  "quantification": {
+    "Cu2CO3(OH)2_Malachite_???": 8.59,
+    "CuS_Covellite_????": 7.13,
+    "gamma-FeOOH_Lepidocrocite_???": 8.16,
+    "CoOOH_Heterogenite_???": 4.3,
+    "CaSO4.2H2O_Gypsum_??": 7.09,
+    "FeS2_Pyrite_???": 8.03,
+    "(Mg,Fe)5Al2Si3O10_Clinochlore_????": 7.22,
+    "Al2SiO5_Andalusite_???": 8.03,
+    "Al2SiO5_Kyanite_???": 5.24,
+    "Cu2O_Cuprite_???": 4.55,
+    "Fe2O3_Hematite_???": 7.73,
+    "CaMg(CO3)2_Dolomite_???": 5.33,
+    "Fe3O4_Magnetite_???": 6.49,
+    "alpha-FeOOH_Goethite_???": 5.28,
+    "CaCO3_Calcite_???": 3.27,
+    "SiO2_Quartz_??": 3.54
+  },
+  "output_files": {
+    "main_figure": "C:\\Users\\Administrator\\.qclaw\\workspace\\xrd_analysis\\results\\Y-2_XRD.eps",
+    "peak_table": "C:\\Users\\Administrator\\.qclaw\\workspace\\xrd_analysis\\results\\Y-2_peaks.png",
+    "quant_pie": "C:\\Users\\Administrator\\.qclaw\\workspace\\xrd_analysis\\results\\Y-2_quant.png"
+  },
+  "plot_settings": {
+    "journal": "Minerals Engineering",
+    "dpi": 300,
+    "wavelength": "Cu K? 1.5406 ?"
+  }
+}

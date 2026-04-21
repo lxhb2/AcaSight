@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><title>Image Viewer</title></head>
+<body style="margin:0;background:#000">
+<img id="img" style="max-width:100vw;max-height:100vh" />
+<script>
+fetch('4f5c20a8-a58c-4521-8659-81d777ebce72.jpg')
+  .then(r => r.blob())
+  .then(b => {
+    document.getElementById('img').src = URL.createObjectURL(b);
+  });
+</script>
+</body>
+</html>

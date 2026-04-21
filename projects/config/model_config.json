@@ -1,0 +1,54 @@
+{
+    "providers": {
+        "online": {
+            "provider": "siliconflow",
+            "model": "Pro/zai-org/GLM-5.1",
+            "base_url": "https://api.siliconflow.cn/v1",
+            "api_key": "sk-qaskofpkrksvlspvaoqxrjmhcrdujhurygpgultsrhraqcee",
+            "temperature": 0.7,
+            "timeout": 60
+        },
+        "offline_ollama": {
+            "provider": "ollama",
+            "model": "qwen3.5:4b",
+            "base_url": "http://localhost:11434",
+            "api_key": "ollama",
+            "temperature": 0.7,
+            "timeout": 300
+        },
+        "offline_lmstudio": {
+            "provider": "lmstudio",
+            "model": "qwen2.5-3b-instruct",
+            "base_url": "http://localhost:1234/v1",
+            "api_key": "lm-studio",
+            "temperature": 0.7,
+            "timeout": 300
+        }
+    },
+    "default_offline": "lmstudio",
+    "prompt_mode": "auto",
+    "tools": [
+        "create_project",
+        "list_projects",
+        "get_project_status",
+        "create_module",
+        "get_modules",
+        "add_challenge",
+        "complete_challenge",
+        "complete_module",
+        "generate_boss_task",
+        "complete_boss_task",
+        "get_boss_task",
+        "get_learning_history",
+        "get_learning_statistics",
+        "get_daily_summary",
+        "add_learning_resource",
+        "add_code_snippet",
+        "get_resources",
+        "add_note",
+        "reset_combo",
+        "pause_combo",
+        "resume_combo",
+        "get_combo_status"
+    ]
+}

@@ -1,0 +1,31 @@
+{
+    "version": "1.0",
+    "description": "脉冲学习系统数据目录配置",
+    
+    "data_dir": {
+        "primary": "assets/PulseLearning",
+        "obsidian_vault": null,
+        "use_symlink": false
+    },
+    
+    "paths": {
+        "projects": "${data_dir.primary}",
+        "badges": "${data_dir.primary}/badges.json",
+        "memory": "${data_dir.primary}/memory",
+        "daily_notes": "${data_dir.primary}/memory/logs"
+    },
+    
+    "obsidian": {
+        "enabled": false,
+        "vault_path": null,
+        "sync_mode": "none",
+        "daily_notes_folder": "Daily",
+        "projects_folder": "Projects/PulseLearning"
+    },
+    
+    "migration": {
+        "legacy_vault_path": null,
+        "migrated": false,
+        "backup_created": false
+    }
+}

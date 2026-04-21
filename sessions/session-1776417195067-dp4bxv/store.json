@@ -1,0 +1,25 @@
+{
+  "id": "session-1776417195067-dp4bxv",
+  "name": "Hermes Web集成",
+  "status": "active",
+  "createdAt": "2026-04-17T10:16:01.585Z",
+  "updatedAt": "2026-04-18T02:52:55.669Z",
+  "agents": [
+    {
+      "id": "agent_slnxdzq4",
+      "name": "Main Agent",
+      "role": "assistant",
+      "status": "idle",
+      "createdAt": "2026-04-17T10:16:01.585Z",
+      "model": "unknown",
+      "systemPrompt": ""
+    }
+  ],
+  "summary": {
+    "id": "summary_j3r25beg",
+    "title": "Hermes Web集成",
+    "createdAt": "2026-04-17T10:16:01.585Z",
+    "file": "summary_j3r25beg.md"
+  },
+  "lastMessageCount": 90
+}

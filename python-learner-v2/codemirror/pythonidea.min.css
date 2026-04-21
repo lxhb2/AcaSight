@@ -1,0 +1,15 @@
+.CodeMirror {background: #1e1e1e; color: #d4d4d4}
+.CodeMirror-gutters {background: #1e1e1e; border-right: 1px solid #333}
+.CodeMirror-linenumber {color: #666}
+.CodeMirror-cursor {border-left: 1px solid #fff}
+.CodeMirror-selected {background: #264f78}
+.cm-keyword {color: #569cd6}
+.cm-string {color: #ce9178}
+.cm-number {color: #b5cea8}
+.cm-comment {color: #6a9955}
+.cm-variable {color: #9cdcfe}
+.cm-property {color: #9cdcfe}
+.cm-operator {color: #d4d4d4}
+.cm-func {color: #dcdcaa}
+.cm-atom {color: #569cd6}
+.cm-def {color: #dcdcaa}

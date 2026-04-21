@@ -1,0 +1,236 @@
+﻿{
+  "1-7": {
+    "exercises": [
+      {
+        "type": "code",
+        "answer": "import random\\nchoices = ['剪刀','石头','布']\\nplayer = '石头'\\ncomputer = random.choice(choices)\\nprint(f'你: {player}, 电脑: {computer}')\\n# 判断输赢逻辑自行实现",
+        "question": "实现剪刀石头布游戏"
+      }
+    ],
+    "difficulty": 3,
+    "title": "综合练习：小游戏"
+  },
+  "1-12": {
+    "exercises": [
+      {
+        "hint": "__init__ 方法用于初始化属性",
+        "type": "code",
+        "answer": "class Person:\\n    def __init__(self, name, age):\\n        self.name = name\\n        self.age = age\\n\\np = Person('小明', 20)\\nprint(p.name, p.age)",
+        "question": "定义 Person 类，有 name 和 age 属性"
+      }
+    ],
+    "difficulty": 4,
+    "title": "类和对象基础"
+  },
+  "1-5": {
+    "exercises": [
+      {
+        "hint": "使用 append() 方法添加元素",
+        "type": "code",
+        "answer": "fruits = ['苹果','香蕉','橙子']\\nfruits.append('葡萄')\\nprint(fruits)",
+        "question": "创建列表 fruits = ['苹果','香蕉','橙子']，添加'葡萄'"
+      },
+      {
+        "hint": "索引从0开始，第2个元素索引为1",
+        "type": "code",
+        "answer": "fruits = ['苹果','香蕉','橙子']\\nprint(fruits[1])",
+        "question": "获取列表第2个元素（索引从0开始）"
+      }
+    ],
+    "difficulty": 2,
+    "title": "列表基本操作"
+  },
+  "1-15": {
+    "exercises": [
+      {
+        "hint": "字典使用键值对存储",
+        "type": "code",
+        "answer": "student = {'name':'小明','age':20}\\nprint(student['name'])",
+        "question": "创建字典存储学生信息 {'name':'小明','age':20}"
+      },
+      {
+        "type": "code",
+        "answer": "student = {'name':'小明','age':20}\\nstudent['grade'] = 'A'\\nprint(student)",
+        "question": "向字典添加新键 'grade'"
+      }
+    ],
+    "difficulty": 3,
+    "title": "字典操作"
+  },
+  "1-16": {
+    "exercises": [
+      {
+        "hint": "randint(a,b) 生成 a 到 b 之间的整数",
+        "type": "code",
+        "answer": "import random\\nnum = random.randint(1, 100)\\nprint(num)",
+        "question": "使用 random 模块生成 1-100 随机数"
+      }
+    ],
+    "difficulty": 4,
+    "title": "模块使用"
+  },
+  "1-18": {
+    "exercises": [
+      {
+        "type": "code",
+        "answer": "import random\\ntarget = random.randint(1, 100)\\nfor i in range(5):\\n    guess = int(input('请输入猜测: '))\\n    if guess == target:\\n        print('恭喜正确！')\\n        break\\n    elif guess < target:\\n        print('太小了')\\n    else:\\n        print('太大了')",
+        "question": "实现一个简单的猜数字游戏"
+      }
+    ],
+    "difficulty": 4,
+    "title": "综合实战"
+  },
+  "1-6": {
+    "exercises": [
+      {
+        "hint": "range(1,6) 生成 1-5",
+        "type": "code",
+        "answer": "for i in range(1, 6):\\n    print(i)",
+        "question": "使用 for 循环打印 1-5"
+      },
+      {
+        "type": "code",
+        "answer": "total = 0\\nfor i in range(1, 6):\\n    total += i\\nprint(total)",
+        "question": "计算 1+2+3+4+5 的总和"
+      }
+    ],
+    "difficulty": 2,
+    "title": "for 循环基础"
+  },
+  "1-8": {
+    "exercises": [
+      {
+        "hint": "使用 def 定义函数",
+        "type": "code",
+        "answer": "def say_hello(name):\\n    return f'你好，{name}！'\\n\\nprint(say_hello('小明'))",
+        "question": "定义函数 say_hello(name) 返回问候语"
+      },
+      {
+        "hint": "函数可以接收参数并返回值",
+        "type": "code",
+        "answer": "def add(a, b):\\n    return a + b\\n\\nprint(add(3, 5))",
+        "question": "定义函数计算两个数的和"
+      }
+    ],
+    "difficulty": 3,
+    "title": "函数定义与调用"
+  },
+  "1-4": {
+    "exercises": [
+      {
+        "hint": "可以简化写作 18 <= age <= 60",
+        "type": "code",
+        "answer": "age = 25\\nif 18 <= age <= 60:\\n    print('在有效范围内')",
+        "question": "使用 and 判断年龄在 18-60 岁之间"
+      },
+      {
+        "hint": "or 表示任一条件满足即可",
+        "type": "code",
+        "answer": "role = 'student'\\nif role == 'student' or role == 'teacher':\\n    print('可以进入')",
+        "question": "使用 or 判断是否为学生或教师"
+      }
+    ],
+    "difficulty": 2,
+    "title": "逻辑运算符"
+  },
+  "1-3": {
+    "exercises": [
+      {
+        "hint": "使用 if...else 结构",
+        "type": "code",
+        "answer": "age = 20\\nif age >= 18:\\n    print('成年')\\nelse:\\n    print('未成年')",
+        "question": "如果 age >= 18 则打印 '成年'，否则打印 '未成年'"
+      },
+      {
+        "hint": "使用 if...elif...else 结构",
+        "type": "code",
+        "answer": "score = 85\\nif score >= 90:\\n    print('优秀')\\nelif score >= 80:\\n    print('良好')\\nelif score >= 60:\\n    print('及格')\\nelse:\\n    print('不及格')",
+        "question": "编写程序判断成绩等级，>=90优秀，>=80良好，>=60及格，<60不及格"
+      }
+    ],
+    "difficulty": 2,
+    "title": "条件判断 if/else"
+  },
+  "1-10": {
+    "exercises": [
+      {
+        "type": "code",
+        "answer": "player = [6,7,8]\\ncomputer = [5,8,9]\\n# 比较各场胜负，统计总分",
+        "question": "实现简单的田忌赛马判断逻辑"
+      }
+    ],
+    "difficulty": 3,
+    "title": "逻辑思维训练"
+  },
+  "1-1": {
+    "exercises": [
+      {
+        "hint": "使用单引号或双引号包裹字符串",
+        "type": "code",
+        "answer": "print('Hello Python')",
+        "question": "使用 print() 函数输出 Hello Python"
+      },
+      {
+        "hint": "变量直接赋值，用逗号分隔输出",
+        "type": "code",
+        "answer": "name = '小明'\\nprint('欢迎', name)",
+        "question": "定义变量 name 为 '小明'，然后打印欢迎信息"
+      },
+      {
+        "hint": "可以直接在 print 中计算",
+        "type": "code",
+        "answer": "result = 10 + 20\\nprint(result)",
+        "question": "计算 10 + 20 并打印结果"
+      }
+    ],
+    "difficulty": 1,
+    "title": "print() 函数和变量基础"
+  },
+  "1-9": {
+    "exercises": [
+      {
+        "hint": "默认参数在函数定义时赋值",
+        "type": "code",
+        "answer": "def greet(name, greeting='你好'):\\n    return f'{greeting}，{name}！'\\n\\nprint(greet('小明'))\\nprint(greet('小红','早上好'))",
+        "question": "使用默认参数，定义 greet 函数"
+      }
+    ],
+    "difficulty": 3,
+    "title": "函数参数与返回值"
+  },
+  "1-13": {
+    "exercises": [
+      {
+        "type": "code",
+        "answer": "class Person:\\n    def __init__(self, name, age):\\n        self.name = name\\n        self.age = age\\n    \\n    def introduce(self):\\n        return f'我叫{self.name}，今年{self.age}岁'\\n\\np = Person('小明', 20)\\nprint(p.introduce())",
+        "question": "为 Person 类添加 introduce 方法"
+      }
+    ],
+    "difficulty": 4,
+    "title": "类的方法"
+  },
+  "1-2": {
+    "exercises": [
+      {
+        "hint": "使用 int() 函数转换",
+        "type": "code",
+        "answer": "num = int('100')\\nprint(num + 50)",
+        "question": "将字符串 '100' 转换为整数并加 50"
+      },
+      {
+        "hint": "使用 str() 函数转换",
+        "type": "code",
+        "answer": "age = 88\\nprint('年龄: ' + str(age))",
+        "question": "将数字 88 转换为字符串并拼接"
+      },
+      {
+        "hint": "比较运算返回布尔值 True/False",
+        "type": "code",
+        "answer": "result = 10 > 5\\nprint(result)",
+        "question": "判断 10 > 5 并打印结果"
+      }
+    ],
+    "difficulty": 1,
+    "title": "数据类型与转换"
+  }
+}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>风变编程 - Python学习平台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;color:#e8e8e8}
+.app{display:flex;height:100vh}
+.sidebar{width:280px;background:rgba(0,0,0,0.4);backdrop-filter:blur(10px);border-right:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;overflow:hidden}
+.logo{padding:20px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.logo h1{font-size:1.3rem;background:linear-gradient(90deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:.75rem;color:#888;margin-top:4px}
+.stats{padding:15px;margin:15px;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(123,44,191,0.15));border-radius:12px;border:1px solid rgba(255,255,255,0.1)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{text-align:center}
+.stat b{display:block;font-size:1.2rem;color:#00d4ff}
+.stat small{font-size:.65rem;color:#aaa}
+.course-list{flex:1;overflow-y:auto;padding:10px}
+.course-item{margin-bottom:10px}
+.course-header{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,255,255,0.08);border-radius:8px;cursor:pointer;transition:.3s}
+.course-header:hover{background:rgba(255,255,255,0.15)}
+.course-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.course-info{flex:1}
+.course-name{font-weight:600;font-size:.9rem}
+.course-count{font-size:.72rem;color:#888}
+.course-arrow{transition:.3s;color:#666;font-size:.8rem}
+.course-arrow.open{transform:rotate(90deg)}
+.chapter-list{max-height:0;overflow:hidden;transition:max-height .3s;margin-left:10px}
+.chapter-list.open{max-height:2000px}
+.chapter-item{padding:10px 12px;border-radius:6px;cursor:pointer;font-size:.82rem;color:#bbb;transition:.2s;margin-top:4px}
+.chapter-item:hover{background:rgba(0,212,255,0.15);color:#fff}
+.chapter-item.active{background:rgba(0,212,255,0.25);color:#00d4ff}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{padding:12px 20px;background:rgba(0,0,0,0.3);border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center}
+.current-chapter{font-size:.9rem;color:#aaa}
+.current-chapter span{color:#00d4ff;font-weight:600}
+.tabs{display:flex;gap:5px}
+.tab{padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.8rem;transition:.3s;background:rgba(255,255,255,0.08)}
+.tab:hover{background:rgba(255,255,255,0.15)}
+.tab.active{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}
+.content{flex:1;position:relative}
+.view{position:absolute;top:0;left:0;right:0;bottom:0;display:none}
+.view.active{display:block}
+iframe{width:100%;height:100%;border:none;background:#fff}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:40px}
+.welcome h1{font-size:2rem;background:linear-gradient(90deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px}
+.welcome p{color:#888;margin-bottom:30px}
+.cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;max-width:700px}
+.card{padding:25px;background:rgba(255,255,255,0.08);border-radius:16px;border:1px solid rgba(255,255,255,0.1);width:200px;cursor:pointer;transition:.3s}
+.card:hover{transform:translateY(-5px);background:rgba(255,255,255,0.12);border-color:rgba(0,212,255,0.4)}
+.card-icon{font-size:2.5rem;margin-bottom:12px}
+.card-title{font-weight:600;margin-bottom:6px}
+.card-desc{font-size:.8rem;color:#888}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);padding:12px 24px;background:rgba(0,0,0,0.9);border-radius:8px;font-size:.9rem;opacity:0;transition:.3s;z-index:1000}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo"><h1>🐍 风变编程</h1><p>Python 学习平台</p></div>
+<div class="stats"><div class="stats-grid">
+<div class="stat"><b id="courseCount">4</b><small>课程</small></div>
+<div class="stat"><b id="chapterCount">48</b><small>章节</small></div>
+<div class="stat"><b id="progressCount">0</b><small>已学</small></div>
+</div></div>
+<div class="course-list" id="courseList"></div>
+</aside>
+<main class="main">
+<div class="toolbar">
+<div class="current-chapter">当前：<span id="currentTitle">请选择课程</span></div>
+<div class="tabs">
+<div class="tab active" onclick="switchTab(0)">📖 阅读</div>
+<div class="tab" onclick="switchTab(1)">📝 练习</div>
+</div>
+</div>
+<div class="content">
+<div class="view active" id="view0">
+<div class="welcome">
+<h1>🐍 风变编程</h1>
+<p>选择左侧课程开始学习</p>
+<div class="cards" id="welcomeCards"></div>
+</div>
+</div>
+<div class="view" id="view1"><iframe id="practiceFrame"></iframe></div>
+</div>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const courseData = {"basePath":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析","courses":[{"name":"【1】Python基础语法","icon":"📚","color":"linear-gradient(135deg,#00d4ff,#0099cc)","chapters":[{"id":"1-1","name":"千寻的名字","f":"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\0关-千寻的名字.html"},{"id":"1-2","name":"萌新的进化","f":"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\1关-萌新的进化.html"},{"id":"1-3","name":"灭霸的选择","f":"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\2关-灭霸的选择.html"},{"id":"1-4","name":"霍格沃兹的来信","f":"【1】Python基础语法\\0~3关：第1个小目标：别叫我萌新\\3关-霍格沃兹的来信.html"},{"id":"1-5","name":"收纳的艺术","f":"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\4关-收纳的艺术.html"},{"id":"1-6","name":"消灭该怎么的重复（上）","f":"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\5关-消灭该怎么的重复（上）.html"},{"id":"1-7","name":"消灭该怎么的重复（下）","f":"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\6关-消灭该怎么的重复（下）.html"},{"id":"1-8","name":"小游戏大学问","f":"【1】Python基础语法\\4~7关：第2个小目标：做出我的第一个项目\\7关-小游戏大学问.html"},{"id":"1-9","name":"编程学习的两大瓶颈","f":"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\8关-编程学习的两大瓶颈.html"},{"id":"1-10","name":"喊出我的名字","f":"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\9关-喊出我的名字.html"},{"id":"1-11","name":"田忌赛马","f":"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\10关-田忌赛马.html"},{"id":"1-12","name":"杀死那只机生虫","f":"【1】Python基础语法\\8~11关：第3个小目标：编程思维初探\\11关-杀死那只机生虫.html"},{"id":"1-13","name":"我有一个机器人（上）","f":"【1】Python基础语法\\12~14关：第4个小目标：学会找对象\\12关-我有一个机器人（上）.html"},{"id":"1-14","name":"我有一个机器人（下）","f":"【1】Python基础语法\\12~14关：第4个小目标：学会找对象\\13关-我有一个机器人（下）.html"},{"id":"1-15","name":"命中注定我克你","f":"【1】Python基础语法\\12~14关：第4个小目标：学会找对象\\14关-命中注定我克你.html"},{"id":"1-16","name":"计算机的新华字典","f":"【1】Python基础语法\\15~17关：第5个小目标：用Python给朋友发个邮件\\15关-计算机的新华字典.html"},{"id":"1-17","name":"哆啦A梦的百宝箱","f":"【1】Python基础语法\\15~17关：第5个小目标：用Python给朋友发个邮件\\16关-哆啦A梦的百宝箱.html"},{"id":"1-18","name":"邮件还能这么发","f":"【1】Python基础语法\\15~17关：第5个小目标：用Python给朋友发个邮件\\17关-邮件还能这么发.html"},{"id":"1-19","name":"需求你造吗？我造","f":"【1】Python基础语法\\18~19关：第6个小目标：完成一个迷你产品\\18关-需求你造吗？我造.html"},{"id":"1-20","name":"高效偷懒的正确姿势","f":"【1】Python基础语法\\18~19关：第6个小目标：完成一个迷你产品\\19关-高效偷懒的正确姿势.html"}]},{"name":"【2】Python爬虫精进","icon":"🕷️","color":"linear-gradient(135deg,#ff6b6b,#ee5a24)","chapters":[{"id":"2-1","name":"重新定义上网冲浪","f":"【2】Python爬虫精进\\0~1关：第1个小目标：初窥门径\\0关-重新定义上网冲浪.html"},{"id":"2-2","name":"我也可以写个网页","f":"【2】Python爬虫精进\\0~1关：第1个小目标：初窥门径\\1关-我也可以写个网页.html"},{"id":"2-3","name":"爬虫初体验","f":"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\2关-爬虫初体验.html"},{"id":"2-4","name":"解密吴氏私厨","f":"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\3关-解密吴氏私厨.html"},{"id":"2-5","name":"寻找周杰伦","f":"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\4关-寻找周杰伦.html"},{"id":"2-6","name":"狂热粉丝","f":"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\5关-狂热粉丝.html"},{"id":"2-7","name":"爬到的数据存哪里？","f":"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\6关-爬到的数据存哪里？.html"},{"id":"2-8","name":"复习：温故而知新","f":"【2】Python爬虫精进\\2~7关：第2个小目标：爬虫小成\\7关-复习：温故而知新.html"},{"id":"2-9","name":"带着小饼干登录","f":"【2】Python爬虫精进\\8~10关：第3个小目标：更上层楼\\8关-带着小饼干登录.html"},{"id":"2-10","name":"指挥浏览器自动工作","f":"【2】Python爬虫精进\\8~10关：第3个小目标：更上层楼\\9关-指挥浏览器自动工作.html"},{"id":"2-11","name":"让爬虫按时向你汇报","f":"【2】Python爬虫精进\\8~10关：第3个小目标：更上层楼\\10关-让爬虫按时向你汇报.html"},{"id":"2-12","name":"建立爬虫军队","f":"【2】Python爬虫精进\\11~15关：第4个小目标：拨云见日\\11关-建立爬虫军队.html"},{"id":"2-13","name":"吃什么不会胖？","f":"【2】Python爬虫精进\\11~15关：第4个小目标：拨云见日\\12关-吃什么不会胖？.html"},{"id":"2-14","name":"各司其职的爬虫公司","f":"【2】Python爬虫精进\\11~15关：第4个小目标：拨云见日\\13关-各司其职的爬虫公司.html"},{"id":"2-15","name":"出任爬虫公司CEO","f":"【2】Python爬虫精进\\11~15关：第4个小目标：拨云见日\\14关-出任爬虫公司CEO.html"},{"id":"2-16","name":"逢山开路与不甘庸碌","f":"【2】Python爬虫精进\\11~15关：第4个小目标：拨云见日\\15关-逢山开路与不甘庸碌.html"}]},{"name":"【3】python办公自动化","icon":"🤖","color":"linear-gradient(135deg,#4caf50,#2e7d32)","chapters":[{"id":"3-1","name":"导学课：快速获取文件名","f":"【3】python办公自动化\\第1关：导学课：快速获取文件名\\风变编程.html"},{"id":"3-2","name":"txt文件筛选与读写","f":"【3】python办公自动化\\第2关：初入职场：txt文件筛选与读写\\风变编程.html"},{"id":"3-3","name":"openpyx基础知识","f":"【3】python办公自动化\\第3关：Python,Excle：openpyx基础知识\\风变编程.html"},{"id":"3-4","name":"表格读写","f":"【3】python办公自动化\\第4关：慢即是快：表格读写\\风变编程.html"},{"id":"3-5","name":"筛选匹配","f":"【3】python办公自动化\\第5关：技术改变工作：筛选匹配\\风变编程.html"},{"id":"3-6","name":"设置excel样式","f":"【3】python办公自动化\\第6关：转正危机：设置excel样式\\风变编程.html"}]},{"name":"【4】Python数据分析实训课","icon":"📊","color":"linear-gradient(135deg,#9c27b0,#7b1fa2)","chapters":[{"id":"4-1","name":"数据的世界","f":"【4】Python数据分析实训课\\第1关 数据的世界：数据探索\\风变编程.html"},{"id":"4-2","name":"三问三答","f":"【4】Python数据分析实训课\\第2关 三问三答：数据分析1\\风变编程.html"},{"id":"4-3","name":"临门一脚","f":"【4】Python数据分析实训课\\第3关 临门一脚：数据可视化1\\风变编程.html"},{"id":"4-4","name":"口罩生意","f":"【4】Python数据分析实训课\\第4关 口罩生意：数据清洗\\风变编程.html"},{"id":"4-5","name":"难度升级","f":"【4】Python数据分析实训课\\第5关 难度升级：数据分析2\\风变编程.html"},{"id":"4-6","name":"看见数据","f":"【4】Python数据分析实训课\\第6关 看见数据：数据可视化2\\风变编程.html"}]}]};
+let progress = JSON.parse(localStorage.getItem("windlearn_progress") || "{}");
+let currentCourse = null, currentChapter = null;
+
+function init() {
+    renderCourseList();
+    renderWelcomeCards();
+    updateStats();
+}
+
+function renderCourseList() {
+    const cl = document.getElementById("courseList");
+    cl.innerHTML = "";
+    courseData.courses.forEach((c, ci) => {
+        let html = `<div class="course-item">
+            <div class="course-header" onclick="toggleCourse(${ci})">
+                <div class="course-icon" style="background:${c.color}">${c.icon}</div>
+                <div class="course-info">
+                    <div class="course-name">${c.name}</div>
+                    <div class="course-count">${c.chapters.length} 章</div>
+                </div>
+                <span class="course-arrow">▶</span>
+            </div>
+            <div class="chapter-list">${c.chapters.map((ch, i) => 
+                `<div class="chapter-item" onclick="loadChapter(${ci}, ${i})" data-cid="${ch.id}">${ch.name}</div>`
+            ).join("")}</div>
+        </div>`;
+        cl.innerHTML += html;
+    });
+}
+
+function renderWelcomeCards() {
+    const wc = document.getElementById("welcomeCards");
+    wc.innerHTML = courseData.courses.map((c, i) => 
+        `<div class="card" onclick="openCourse(${i})">
+            <div class="card-icon">${c.icon}</div>
+            <div class="card-title">${c.name}</div>
+            <div class="card-desc">${c.chapters.length} 章课程</div>
+        </div>`
+    ).join("");
+}
+
+function toggleCourse(idx) {
+    const arrows = document.querySelectorAll(".course-arrow");
+    const lists = document.querySelectorAll(".chapter-list");
+    arrows[idx].classList.toggle("open");
+    lists[idx].classList.toggle("open");
+}
+
+function openCourse(idx) {
+    toggleCourse(idx);
+    if (courseData.courses[idx].chapters.length > 0) {
+        loadChapter(idx, 0);
+    }
+}
+
+function loadChapter(ci, chi) {
+    const c = courseData.courses[ci];
+    const ch = c.chapters[chi];
+    currentCourse = ci;
+    currentChapter = chi;
+    
+    document.querySelectorAll(".chapter-item").forEach(el => el.classList.remove("active"));
+    document.querySelector(`[data-cid="${ch.id}"]`).classList.add("active");
+    
+    document.getElementById("currentTitle").textContent = ch.name;
+    
+    const url = "file:///" + courseData.basePath + "/" + ch.f.replace(/\\/g, "/");
+    document.getElementById("view0").innerHTML = `<iframe src="${url}"></iframe>`;
+    
+    progress[ch.id] = true;
+    localStorage.setItem("windlearn_progress", JSON.stringify(progress));
+    updateStats();
+    
+    showToast("已加载：" + ch.name);
+}
+
+function switchTab(idx) {
+    document.querySelectorAll(".tab").forEach((t, i) => t.classList.toggle("active", i === idx));
+    document.querySelectorAll(".view").forEach((v, i) => v.classList.toggle("active", i === idx));
+}
+
+function updateStats() {
+    document.getElementById("progressCount").textContent = Object.keys(progress).length;
+    let total = courseData.courses.reduce((s, c) => s + c.chapters.length, 0);
+    document.getElementById("chapterCount").textContent = total;
+}
+
+function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+init();
+</script>
+</body>
+</html>

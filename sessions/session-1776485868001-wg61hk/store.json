@@ -1,0 +1,25 @@
+{
+  "id": "session-1776485868001-wg61hk",
+  "name": "N10图书分类",
+  "status": "active",
+  "createdAt": "2026-04-18T04:28:58.481Z",
+  "updatedAt": "2026-04-18T04:28:58.482Z",
+  "agents": [
+    {
+      "id": "agent_suj4hapx",
+      "name": "Main Agent",
+      "role": "assistant",
+      "status": "idle",
+      "createdAt": "2026-04-18T04:28:58.481Z",
+      "model": "unknown",
+      "systemPrompt": ""
+    }
+  ],
+  "summary": {
+    "id": "summary_v07mq4on",
+    "title": "N10图书分类",
+    "createdAt": "2026-04-18T04:28:58.482Z",
+    "file": "summary_v07mq4on.md"
+  },
+  "lastMessageCount": 56
+}

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>风变编程 - Python学习助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;color:#e8e8e8}
+.app{display:flex;height:100vh}
+.sidebar{width:280px;background:rgba(0,0,0,0.3);backdrop-filter:blur(10px);border-right:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;overflow:hidden}
+.logo{padding:20px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.logo h1{font-size:1.4rem;background:linear-gradient(90deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:.8rem;color:#888;margin-top:5px}
+.stats{margin:15px;padding:15px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(123,44,191,0.1));border-radius:12px;border:1px solid rgba(255,255,255,0.1)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{text-align:center}
+.stat b{font-size:1.4rem;color:#00d4ff}
+.stat small{font-size:.7rem;color:#888}
+.courses{flex:1;overflow-y:auto;padding:10px}
+.cat{margin-bottom:12px}
+.cat-hdr{display:flex;align-items:center;gap:8px;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;cursor:pointer;transition:.3s}
+.cat-hdr:hover{background:rgba(255,255,255,0.1)}
+.cat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.cat-info{flex:1;overflow:hidden}
+.cat-name{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-cnt{font-size:.72rem;color:#888}
+.cat-arrow{transition:.3s;color:#666;font-size:.8rem}
+.cat-arrow.open{transform:rotate(90deg)}
+.ch-list{max-height:0;overflow:hidden;transition:max-height .3s ease;margin-left:16px}
+.ch-list.open{max-height:2000px}
+.ch{padding:9px 12px;border-radius:6px;cursor:pointer;font-size:.82rem;color:#aaa;transition:.2s;display:flex;align-items:center;gap:8px}
+.ch:hover{background:rgba(0,212,255,0.1);color:#fff}
+.ch.active{background:rgba(0,212,255,0.2);color:#00d4ff}
+.ch-num{font-size:.72rem;color:#666;min-width:28px;flex-shrink:0}
+.ch-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.1)}
+.tabs{display:flex;gap:4px}
+.tab{padding:7px 16px;border-radius:6px;cursor:pointer;font-size:.84rem;transition:.3s;background:rgba(255,255,255,0.05)}
+.tab:hover{background:rgba(255,255,255,0.1)}
+.tab.on{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:.84rem;transition:.3s;display:flex;align-items:center;gap:5px}
+.btn-p{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}
+.btn-s{background:rgba(255,255,255,0.1);color:#e8e8e8}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,212,255,0.3)}
+.area{flex:1;overflow:hidden;position:relative}
+.view{width:100%;height:100%;display:none;position:absolute;top:0;left:0}
+.view.on{display:block}
+iframe.frm{width:100%;height:100%;border:none;background:#fff}
+.ide{display:flex;height:100%}
+.code-p{flex:1;display:flex;flex-direction:column;background:#1e1e1e}
+.pane-h{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#252526;border-bottom:1px solid #333}
+.pane-t{font-size:.84rem;color:#ccc;display:flex;align-items:center;gap:6px}
+textarea.ed{width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;border:none;padding:14px;font-family:Consolas,Monaco,monospace;font-size:14px;line-height:1.6;resize:none;outline:none}
+.out-p{width:380px;display:flex;flex-direction:column;background:#1e1e1e;border-left:1px solid #333}
+.out-c{flex:1;padding:14px;font-family:Consolas,Monaco,monospace;font-size:13px;line-height:1.5;overflow-y:auto;color:#d4d4d4;white-space:pre-wrap}
+.st{font-size:.72rem;padding:3px 8px;border-radius:4px}
+.st.ok{background:rgba(76,175,80,0.2);color:#4caf50}
+.st.ld{background:rgba(255,152,0,0.2);color:#ff9800}
+.right{width:300px;background:rgba(0,0,0,0.3);backdrop-filter:blur(10px);border-left:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column}
+.r-hdr{padding:18px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:1.05rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.r-list{flex:1;overflow-y:auto;padding:12px}
+.r-sec{margin-bottom:18px}
+.r-sec-t{font-size:.75rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.r-item{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:.2s}
+.r-item:hover{background:rgba(255,255,255,0.1)}
+.r-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:rgba(0,212,255,0.1);flex-shrink:0}
+.r-info{flex:1;overflow:hidden}
+.r-name{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-type{font-size:.72rem;color:#888}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:40px}
+.w-ico{font-size:3.5rem;margin-bottom:16px}
+.w-title{font-size:1.8rem;font-weight:700;margin-bottom:8px;background:linear-gradient(90deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.w-sub{color:#888;margin-bottom:24px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:560px}
+.card{padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:.3s}
+.card:hover{transform:translateY(-4px);background:rgba(255,255,255,0.1);border-color:rgba(0,212,255,0.3)}
+.card-i{font-size:1.8rem;margin-bottom:8px}
+.card-t{font-weight:600;margin-bottom:4px;font-size:.9rem}
+.card-d{font-size:.75rem;color:#888}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);padding:12px 24px;background:rgba(0,0,0,0.9);border-radius:8px;font-size:.88rem;opacity:0;transition:.3s;z-index:1000}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo"><h1>🐍 风变编程</h1><p>Python 学习助手</p></div>
+<div class="stats"><div class="stats-grid">
+<div class="stat"><b id="s1">4</b><br><small>课程</small></div>
+<div class="stat"><b id="s2">0</b><br><small>章节</small></div>
+<div class="stat"><b id="s3">0</b><br><small>已完成</small></div>
+<div class="stat"><b id="s4">0%</b><br><small>进度</small></div>
+</div></div>
+<div class="courses" id="cl"></div>
+</aside>
+<main class="main">
+<div class="toolbar">
+<div class="tabs">
+<div class="tab on" data-m="read" onclick="switchMode('read')">📖 阅读</div>
+<div class="tab" data-m="code" onclick="switchMode('code')">🐍 实操</div>
+<div class="tab" data-m="ex" onclick="switchMode('ex')">📝 练习</div>
+</div>
+<div><button class="btn btn-s" onclick="showHelp()">❓ 帮助</button></div>
+</div>
+<div class="area">
+<div class="view on" id="v0"><div class="welcome"><div class="w-ico">🎯</div><h1 class="w-title">风变编程 Python 课程</h1><p class="w-sub">选择左侧课程开始学习</p><div class="cards" id="wc"></div></div></div>
+<div class="view" id="v1"><iframe class="frm" id="frm"></iframe></div>
+<div class="view" id="v2"><div class="ide"><div class="code-p"><div class="pane-h"><div class="pane-t"><span>📝</span> 代码编辑器</div><button class="btn btn-p" onclick="runPy()">▶ 运行</button></div><textarea class="ed" id="ed" spellcheck="false" placeholder="# 在这里输入 Python 代码&#10;print('Hello, Python!')"></textarea></div><div class="out-p"><div class="pane-h"><div class="pane-t"><span>📤</span> 输出</div><span class="st ld" id="ost">加载中</span></div><div class="out-c" id="oc">正在初始化 Pyodide...</div></div></div></div>
+<div class="view" id="v3"><div class="welcome"><div class="w-ico">📝</div><h1 class="w-title">课后练习</h1><p class="w-sub">选择课程章节后显示练习题</p></div></div>
+</div>
+</main>
+<aside class="right"><div class="r-hdr"><span>📦</span> 学习资料</div><div class="r-list" id="rl"></div></aside>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const COURSES={"【1】Python基础语法":{icon:"📚",color:"linear-gradient(135deg,#00d4ff,#0099cc)",chapters:[
+{id:"0",name:"千寻的名字",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/0关-千寻的名字.html"},
+{id:"1",name:"萌新的进化",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/1关-萌新的进化.html"},
+{id:"2",name:"灭霸的选择",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/2关-灭霸的选择.html"},
+{id:"3",name:"霍格沃兹的来信",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/3关-霍格沃兹的来信.html"},
+{id:"4",name:"收纳的艺术",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/4关-收纳的艺术.html"},
+{id:"5",name:"消灭该死重复上",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/5关-消灭该死的重复（上）.html"},
+{id:"6",name:"消灭该死重复下",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/6关-消灭该死的重复（下）.html"},
+{id:"7",name:"小游戏大学问",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/7关-小游戏大学问.html"},
+{id:"8",name:"编程学习瓶颈",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/8关-编程学习的两大瓶颈.html"},
+{id:"9",name:"喊出我的名字",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/9关-喊出我的名字.html"},
+{id:"10",name:"田忌赛马",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/10关-田忌赛马.html"},
+{id:"11",name:"杀死机生虫",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/11关-杀死那只"机"生虫.html"},
+{id:"12",name:"机器人上",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/12~14关：第4个小目标：学会"找对象"/12关-我有一个"机器人"（上）.html"},
+{id:"13",name:"机器人下",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/12~14关：第4个小目标：学会"找对象"/13关-我有一个"机器人"（下）.html"},
+{id:"14",name:"命中注定我克你",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/12~14关：第4个小目标：学会"找对象"/14关-命中注定我克你.html"},
+{id:"15",name:"新华字典",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/15~17关：第5个小目标：用Python给朋友发个邮件/15关-计算机的"新华字典".html"},
+{id:"16",name:"哆啦A梦百宝箱",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/15~17关：第5个小目标：用Python给朋友发个邮件/16关-哆啦A梦的百宝箱.html"},
+{id:"17",name:"邮件还能这么发",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/15~17关：第5个小目标：用Python给朋友发个邮件/17关-邮件还能这么发！.html"},
+{id:"18",name:"需求你造吗",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/18~19关：第6个小目标：完成一个迷你产品/18关-需求你造吗？我造.html"},
+{id:"19",name:"高效偷懒姿势",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/18~19关：第6个小目标：完成一个迷你产品/19关-高效偷懒的正确姿势.html"}
+]},
+"【2】Python爬虫精进":{icon:"🕷️",color:"linear-gradient(135deg,#ff6b6b,#ee5a24)",chapters:[
+{id:"0",name:"重新定义上网冲浪",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/0~1关：第1个小目标：初窥门径/0关-重新定义上网冲浪.html"},
+{id:"1",name:"我也可以写网页",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/0~1关：第1个小目标：初窥门径/1关-我也可以写个网页.html"},
+{id:"2",name:"爬虫初体验",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/2~7关：第2个小目标：爬虫小成/2关-爬虫初体验.html"},
+{id:"3",name:"解密吴氏私厨",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/2~7关：第2个小目标：爬虫小成/3关-解密吴氏私厨.html"},
+{id:"4",name:"寻找周杰伦",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/2~7关：第2个小目标：爬虫小成/4关-寻找周杰伦.html"},
+{id:"5",name:"狂热粉丝",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/2~7关：第2个小目标：爬虫小成/5关-狂热粉丝.html"},
+{id:"6",name:"数据存哪里",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/2~7关：第2个小目标：爬虫小成/6关-爬到的数据存哪里？.html"},
+{id:"7",name:"复习温故知新",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/2~7关：第2个小目标：爬虫小成/7关-复习：温故而知新.html"},
+{id:"8",name:"带着小饼干登录",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/8~10关：第3个小目标：更上层楼/8关-带着小饼干登录.html"},
+{id:"9",name:"指挥浏览器工作",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/8~10关：第3个小目标：更上层楼/9关-指挥浏览器自动工作.html"},
+{id:"10",name:"爬虫按时汇报",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/8~10关：第3个小目标：更上层楼/10关-让爬虫按时向你汇报.html"},
+{id:"11",name:"建立爬虫军队",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/11~15关：第4个小目标：拨云见日/11关-建立爬虫军队.html"},
+{id:"12",name:"吃什么不会胖",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/11~15关：第4个小目标：拨云见日/12关-吃什么不会胖？.html"},
+{id:"13",name:"各司其职爬虫公司",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/11~15关：第4个小目标：拨云见日/13关-各司其职的爬虫公司.html"},
+{id:"14",name:"出任爬虫CEO",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/11~15关：第4个小目标：拨云见日/14关-出任爬虫公司CEO.html"},
+{id:"15",name:"逢山开路",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【2】Python爬虫精进/11~15关：第4个小目标：拨云见日/15关-逢山开路与不甘庸碌.html"}
+]},
+"【3】python办公自动化":{icon:"🤖",color:"linear-gradient(135deg,#4caf50,#2e7d32)",chapters:[
+{id:"1",name:"导学课-获取文件名",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【3】python办公自动化/第1关：导学课：快速获取文件名/风变编程.html"},
+{id:"2",name:"txt文件筛选读写",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【3】python办公自动化/第2关：初入职场：txt文件筛选与读写/风变编程.html"},
+{id:"3",name:"openpyx基础",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【3】python办公自动化/第3关：Python,Excle：openpyx基础知识/风变编程.html"},
+{id:"4",name:"表格读写",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【3】python办公自动化/第4关：慢即是快：表格读写/风变编程.html"},
+{id:"5",name:"筛选匹配",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【3】python办公自动化/第5关：技术改变工作：筛选匹配/风变编程.html"},
+{id:"6",name:"设置excel样式",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【3】python办公自动化/第6关：转正危机：设置excel样式/风变编程.html"}
+]},
+"【4】Python数据分析实训课":{icon:"📊",color:"linear-gradient(135deg,#9c27b0,#7b1fa2)",chapters:[
+{id:"1",name:"数据的世界",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【4】Python数据分析实训课/第1关 数据的世界：数据探索/风变编程.html"},
+{id:"2",name:"三问三答",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【4】Python数据分析实训课/第2关 三问三答：数据分析1/风变编程.html"},
+{id:"3",name:"临门一脚",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【4】Python数据分析实训课/第3关 临门一脚：数据可视化1/风变编程.html"},
+{id:"4",name:"口罩生意",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【4】Python数据分析实训课/第4关 口罩生意：数据清洗/风变编程.html"},
+{id:"5",name:"难度升级",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【4】Python数据分析实训课/第5关 难度升级：数据分析2/风变编程.html"},
+{id:"6",name:"看见数据",path:"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【4】Python数据分析实训课/第6关 看见数据：数据可视化2/风变编程.html"}
+]}};
+
+let pyodide=null,curCourse=null,curChapter=null,mode="read",progress=JSON.parse(localStorage.getItem("pyLearnProgress")||"{}");
+
+function init(){
+  let tc=0;
+  Object.values(COURSES).forEach(c=>tc+=c.chapters.length);
+  document.getElementById("s2").textContent=tc;
+  let cc=Object.keys(progress).length;
+  document.getElementById("s3").textContent=cc;
+  document.getElementById("s4").textContent=tc?Math.round(cc/tc*100)+"%":"0%";
+  renderCourses();
+  renderWelcomeCards();
+  renderResources();
+}
+
+function renderCourses(){
+  const cl=document.getElementById("cl");
+  cl.innerHTML="";
+  Object.entries(COURSES).forEach(([name,data])=>{
+    let h=document.createElement("div");
+    h.className="cat";
+    h.innerHTML=`<div class="cat-hdr" onclick="toggleCat(this)"><div class="cat-icon" style="background:${data.color}">${data.icon}</div><div class="cat-info"><div class="cat-name">${name}</div><div class="cat-cnt">${data.chapters.length} 章</div></div><span class="cat-arrow">▶</span></div><div class="ch-list">${data.chapters.map((ch,i)=>`<div class="ch" onclick="loadCh('${name}','${ch.id}')" data-c="${name}" data-id="${ch.id}"><span class="ch-num">${ch.id}</span><span class="ch-txt">${ch.name}</span></div>`).join("")}</div>`;
+    cl.appendChild(h);
+  });
+}
+
+function toggleCat(el){
+  el.querySelector(".cat-arrow").classList.toggle("open");
+  el.nextElementSibling.classList.toggle("open");
+}
+
+function loadCh(cname,cid){
+  curCourse=cname;curChapter=cid;
+  document.querySelectorAll(".ch").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(`.ch[data-c="${cname}"][data-id="${cid}"]`).forEach(x=>x.classList.add("active"));
+  const ch=COURSES[cname].chapters.find(x=>x.id===cid);
+  if(ch){
+    document.getElementById("frm").src="file:///"+ch.path.replace(/\\/g,"/");
+    switchMode("read");
+  }
+}
+
+function renderWelcomeCards(){
+  const wc=document.getElementById("wc");
+  wc.innerHTML=Object.entries(COURSES).map(([name,data])=>`<div class="card" onclick="openCourse('${name}')"><div class="card-i">${data.icon}</div><div class="card-t">${name}</div><div class="card-d">${data.chapters.length} 章</div></div>`).join("");
+}
+
+function openCourse(name){
+  curCourse=name;
+  const el=document.querySelector(`.cat-hdr`);
+  if(el)toggleCat(el);
+  const ch=COURSES[name].chapters[0];
+  if(ch)loadCh(name,ch.id);
+}
+
+function renderResources(){
+  const rl=document.getElementById("rl");
+  rl.innerHTML=`<div class="r-sec"><div class="r-sec-t">📖 课程讲义</div><div class="r-item"><div class="r-ico">📕</div><div class="r-info"><div class="r-name">点击左侧章节</div><div class="r-type">查看课程内容</div></div></div></div><div class="r-sec"><div class="r-sec-t">🐍 配套代码</div><div class="r-item"><div class="r-ico">📄</div><div class="r-info"><div class="r-name">实操模式</div><div class="r-type">编写运行代码</div></div></div></div>`;
+}
+
+function switchMode(m){
+  mode=m;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.m===m));
+  document.querySelectorAll(".view").forEach((v,i)=>{
+    v.classList.toggle("on",m==="read"?i===1:m==="code"?i===2:i===3);
+  });
+}
+
+function showHelp(){
+  alert("📖 使用指南\n\n1. 点击左侧课程展开章节\n2. 点击章节名称加载课程内容\n3. 切换「阅读/实操/练习」模式\n4. 代码模式可运行 Python\n\n💡 提示：课程已预装，点击即可学习！");
+}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+async function runPy(){
+  const ed=document.getElementById("ed"),oc=document.getElementById("oc"),ost=document.getElementById("ost");
+  if(!pyodide){ost.textContent="加载中";ost.className="st ld";oc.textContent="正在初始化 Pyodide...";
+    try{pyodide=await loadPyodide();ost.textContent="就绪";ost.className="st ok";}catch(e){oc.textContent="加载失败: "+e.message;return;}
+  }
+  ost.textContent="运行中";oc.textContent+="\n\n>>> "+ed.value.split("\n").join("\n>>> ")+"\n";
+  try{let r=await pyodide.runPythonAsync(ed.value);if(r)oc.textContent+="\n"+r.toString();}catch(e){oc.textContent+="\n❌ "+e.message;}
+  ost.textContent="完成";setTimeout(()=>{ost.textContent="就绪";ost.className="st ok";},1500);
+}
+
+document.getElementById("ed").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();runPy();}});
+window.onload=init;
+</script>
+</body>
+</html>
+

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>风变编程 - Python学习助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;color:#e8e8e8}
+.app{display:flex;height:100vh}
+.sidebar{width:280px;background:rgba(0,0,0,0.3);backdrop-filter:blur(10px);border-right:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;overflow:hidden}
+.logo{padding:20px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.logo h1{font-size:1.4rem;background:linear-gradient(90deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo p{font-size:.8rem;color:#888;margin-top:5px}
+.stats{margin:15px;padding:15px;background:linear-gradient(135deg,rgba(0,212,255,0.1),rgba(123,44,191,0.1));border-radius:12px;border:1px solid rgba(255,255,255,0.1)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{text-align:center}
+.stat b{font-size:1.4rem;color:#00d4ff}
+.stat small{font-size:.7rem;color:#888}
+.courses{flex:1;overflow-y:auto;padding:10px}
+.cat{margin-bottom:12px}
+.cat-hdr{display:flex;align-items:center;gap:8px;padding:12px;background:rgba(255,255,255,0.05);border-radius:8px;cursor:pointer;transition:.3s}
+.cat-hdr:hover{background:rgba(255,255,255,0.1)}
+.cat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.cat-info{flex:1;overflow:hidden}
+.cat-name{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-cnt{font-size:.72rem;color:#888}
+.cat-arrow{transition:.3s;color:#666;font-size:.8rem}
+.cat-arrow.open{transform:rotate(90deg)}
+.ch-list{max-height:0;overflow:hidden;transition:max-height .3s ease;margin-left:16px}
+.ch-list.open{max-height:2000px}
+.ch{padding:9px 12px;border-radius:6px;cursor:pointer;font-size:.82rem;color:#aaa;transition:.2s;display:flex;align-items:center;gap:8px}
+.ch:hover{background:rgba(0,212,255,0.1);color:#fff}
+.ch.active{background:rgba(0,212,255,0.2);color:#00d4ff}
+.ch-num{font-size:.72rem;color:#666;min-width:28px;flex-shrink:0}
+.ch-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.1)}
+.tabs{display:flex;gap:4px}
+.tab{padding:7px 16px;border-radius:6px;cursor:pointer;font-size:.84rem;transition:.3s;background:rgba(255,255,255,0.05)}
+.tab:hover{background:rgba(255,255,255,0.1)}
+.tab.on{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:.84rem;transition:.3s;display:flex;align-items:center;gap:5px}
+.btn-p{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}
+.btn-s{background:rgba(255,255,255,0.1);color:#e8e8e8}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,212,255,0.3)}
+.area{flex:1;overflow:hidden;position:relative}
+.view{width:100%;height:100%;display:none;position:absolute;top:0;left:0}
+.view.on{display:block}
+iframe.frm{width:100%;height:100%;border:none;background:#fff}
+.ide{display:flex;height:100%}
+.code-p{flex:1;display:flex;flex-direction:column;background:#1e1e1e}
+.pane-h{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#252526;border-bottom:1px solid #333}
+.pane-t{font-size:.84rem;color:#ccc;display:flex;align-items:center;gap:6px}
+textarea.ed{width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;border:none;padding:14px;font-family:Consolas,Monaco,monospace;font-size:14px;line-height:1.6;resize:none;outline:none}
+.out-p{width:380px;display:flex;flex-direction:column;background:#1e1e1e;border-left:1px solid #333}
+.out-c{flex:1;padding:14px;font-family:Consolas,Monaco,monospace;font-size:13px;line-height:1.5;overflow-y:auto;color:#d4d4d4;white-space:pre-wrap}
+.st{font-size:.72rem;padding:3px 8px;border-radius:4px}
+.st.ok{background:rgba(76,175,80,0.2);color:#4caf50}
+.st.ld{background:rgba(255,152,0,0.2);color:#ff9800}
+.right{width:300px;background:rgba(0,0,0,0.3);backdrop-filter:blur(10px);border-left:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column}
+.r-hdr{padding:18px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:1.05rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.r-list{flex:1;overflow-y:auto;padding:12px}
+.r-sec{margin-bottom:18px}
+.r-sec-t{font-size:.75rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.r-item{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:.2s}
+.r-item:hover{background:rgba(255,255,255,0.1)}
+.r-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:rgba(0,212,255,0.1);flex-shrink:0}
+.r-info{flex:1;overflow:hidden}
+.r-name{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-type{font-size:.72rem;color:#888}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:40px}
+.w-ico{font-size:3.5rem;margin-bottom:16px}
+.w-title{font-size:1.8rem;font-weight:700;margin-bottom:8px;background:linear-gradient(90deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.w-sub{color:#888;margin-bottom:24px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:560px}
+.card{padding:20px;background:rgba(255,255,255,0.05);border-radius:12px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:.3s}
+.card:hover{transform:translateY(-4px);background:rgba(255,255,255,0.1);border-color:rgba(0,212,255,0.3)}
+.card-i{font-size:1.8rem;margin-bottom:8px}
+.card-t{font-weight:600;margin-bottom:4px;font-size:.9rem}
+.card-d{font-size:.75rem;color:#888}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);padding:12px 24px;background:rgba(0,0,0,0.9);border-radius:8px;font-size:.88rem;opacity:0;transition:.3s;z-index:1000}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo"><h1>🐍 Python基础语法</h1><p>风变编程 - 课程学习</p></div>
+<div class="stats"><div class="stats-grid">
+<div class="stat"><b>6</b><br><small>目标</small></div>
+<div class="stat"><b id="tc">20</b><br><small>章节</small></div>
+<div class="stat"><b id="cc">0</b><br><small>已完成</small></div>
+<div class="stat"><b id="pc">0%</b><br><small>进度</small></div>
+</div></div>
+<div class="courses" id="cl"></div>
+</aside>
+<main class="main">
+<div class="toolbar">
+<div class="tabs">
+<div class="tab on" data-m="read" onclick="switchMode('read')">📖 阅读</div>
+<div class="tab" data-m="code" onclick="switchMode('code')">🐍 实操</div>
+<div class="tab" data-m="ex" onclick="switchMode('ex')">📝 练习</div>
+</div>
+<div><button class="btn btn-s" onclick="showHelp()">❓ 帮助</button></div>
+</div>
+<div class="area">
+<div class="view on" id="v0"><div class="welcome"><div class="w-ico">🎯</div><h1 class="w-title">Python基础语法</h1><p class="w-sub">点击左侧章节开始学习</p><div class="cards" id="wc"></div></div></div>
+<div class="view" id="v1"><iframe class="frm" id="frm"></iframe></div>
+<div class="view" id="v2"><div class="ide"><div class="code-p"><div class="pane-h"><div class="pane-t"><span>📝</span> 代码编辑器</div><button class="btn btn-p" onclick="runPy()">▶ 运行</button></div><textarea class="ed" id="ed" spellcheck="false" placeholder="# 在这里输入 Python 代码&#10;print('Hello, Python!')"></textarea></div><div class="out-p"><div class="pane-h"><div class="pane-t"><span>📤</span> 输出</div><span class="st ld" id="ost">加载中</span></div><div class="out-c" id="oc">正在初始化 Pyodide...</div></div></div></div>
+<div class="view" id="v3"><div class="welcome"><div class="w-ico">📝</div><h1 class="w-title">课后练习</h1><p class="w-sub">选择课程章节后显示练习题</p></div></div>
+</div>
+</main>
+<aside class="right"><div class="r-hdr"><span>📦</span> 学习资料</div><div class="r-list" id="rl"></div></aside>
+</div>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+<script>
+// 课程数据 - 从源码文件精确提取 (20章完整列表)
+const COURSEDATA = {
+name:"Python基础语法",
+targets:[
+{name:"目标一：别叫我萌新",chapters:[
+{id:"0",name:"千寻的名字"},
+{id:"1",name:"萌新的进化"},
+{id:"2",name:"灭霸的选择"},
+{id:"3",name:"霍格沃兹的来信"}
+]},
+{name:"目标二：做出我的第一个项目",chapters:[
+{id:"4",name:"收纳的艺术"},
+{id:"5",name:"消灭该怎么的重复（上）"},
+{id:"6",name:"消灭该怎么的重复（下）"},
+{id:"7",name:"小游戏大学问"}
+]},
+{name:"目标三：编程思维初探",chapters:[
+{id:"8",name:"编程学习的两大瓶颈思维"},
+{id:"9",name:"深夜食堂营业记"},
+{id:"10",name:"工作量计算器"},
+{id:"11",name:"杀死那只机生虫"}
+]},
+{name:"目标四：学会找对象",chapters:[
+{id:"12",name:"我们都是中国人"},
+{id:"13",name:"中国人和广东人"},
+{id:"14",name:"流浪图书的旅途"}
+]},
+{name:"目标五：用Python给朋友发个邮件",chapters:[
+{id:"15",name:"计算机的新华字典"},
+{id:"16",name:"哆啦A梦的百宝箱"},
+{id:"17",name:"邮件还能这么发"}
+]},
+{name:"目标六：完成一个迷你产品",chapters:[
+{id:"18",name:"需求你造吗？我造"},
+{id:"19",name:"高效偷懒的正确姿势"}
+]}
+]};
+
+// 课程文件路径映射 - 对应本地文件夹中的实际文件
+const LESSONFILES={
+"0":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/0关-千寻的名字.html",
+"1":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/1关-萌新的进化.html",
+"2":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/2关-灭霸的选择.html",
+"3":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/0~3关：第1个小目标：别叫我萌新/3关-霍格沃兹的来信.html",
+"4":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/4关-收纳的艺术.html",
+"5":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/5关-消灭该怎么的重复（上）.html",
+"6":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/6关-消灭该怎么的重复（下）.html",
+"7":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/4~7关：第2个小目标：做出我的第一个项目/7关-小游戏大学问.html",
+"8":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/8关-编程学习的两大瓶颈.html",
+"9":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/9关-喊出我的名字.html",
+"10":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/10关-田忌赛马.html",
+"11":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/8~11关：第3个小目标："编程思维"初探/11关-杀死那只机生虫.html",
+"12":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/12~14关：第4个小目标：学会"找对象"/12关-我有一个机器人（上）.html",
+"13":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/12~14关：第4个小目标：学会"找对象"/13关-我有一个机器人（下）.html",
+"14":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/12~14关：第4个小目标：学会"找对象"/14关-命中注定我克你.html",
+"15":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/15~17关：第5个小目标：用Python给朋友发个邮件/15关-计算机的新华字典.html",
+"16":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/15~17关：第5个小目标：用Python给朋友发个邮件/16关-哆啦A梦的百宝箱.html",
+"17":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/15~17关：第5个小目标：用Python给朋友发个邮件/17关-邮件还能这么发.html",
+"18":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/18~19关：第6个小目标：完成一个迷你产品/18关-需求你造吗？我造.html",
+"19":"D:/百度网盘下载/风/风变：语法+爬虫+自动化+分析/风变：语法+爬虫+自动化+分析/【1】Python基础语法/18~19关：第6个小目标：完成一个迷你产品/19关-高效偷懒的正确姿势.html"
+};
+
+let pyodide=null,curTarget=null,curChapter=null,mode="read",progress=JSON.parse(localStorage.getItem("pyLearnProgress")||"{}");
+
+function init(){
+  document.getElementById("cc").textContent=Object.keys(progress).length;
+  let total=COURSEDATA.targets.reduce((s,t)=>s+t.chapters.length,0);
+  document.getElementById("tc").textContent=total;
+  document.getElementById("pc").textContent=total?Math.round(Object.keys(progress).length/total*100)+"%":"0%";
+  renderCourses();
+  renderWelcomeCards();
+  renderResources();
+}
+
+function renderCourses(){
+  const cl=document.getElementById("cl");
+  cl.innerHTML="";
+  COURSEDATA.targets.forEach((tgt,i)=>{
+    let h=document.createElement("div");
+    h.className="cat";
+    h.innerHTML=`<div class="cat-hdr" onclick="toggleCat(this)"><div class="cat-icon" style="background:linear-gradient(135deg,hsl(${i*60},70%,50%),hsl(${i*60+30},70%,40%))">🎯</div><div class="cat-info"><div class="cat-name">${tgt.name}</div><div class="cat-cnt">${tgt.chapters.length} 章</div></div><span class="cat-arrow">▶</span></div><div class="ch-list">${tgt.chapters.map((ch,idx)=>`<div class="ch" onclick="loadCh(${i},'${ch.id}','${ch.name}')" data-t="${i}" data-id="${ch.id}"><span class="ch-num">第${ch.id}关</span><span class="ch-txt">${ch.name}</span></div>`).join("")}</div>`;
+    cl.appendChild(h);
+  });
+}
+
+function toggleCat(el){
+  el.querySelector(".cat-arrow").classList.toggle("open");
+  el.nextElementSibling.classList.toggle("open");
+}
+
+function loadCh(tidx,cid,cname){
+  curTarget=tidx;curChapter=cid;
+  document.querySelectorAll(".ch").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(`.ch[data-t="${tidx}"][data-id="${cid}"]`).forEach(x=>x.classList.add("active"));
+  
+  // 加载课程内容
+  if(LESSONFILES[cid]){
+    document.getElementById("frm").src="file:///"+LESSONFILES[cid].replace(/\\/g,"/");
+    switchMode("read");
+    
+    // 保存进度
+    progress[cid]=true;
+    localStorage.setItem("pyLearnProgress",JSON.stringify(progress));
+    document.getElementById("cc").textContent=Object.keys(progress).length;
+    let total=COURSEDATA.targets.reduce((s,t)=>s+t.chapters.length,0);
+    document.getElementById("pc").textContent=Math.round(Object.keys(progress).length/total*100)+"%";
+    
+    showToast(`已加载：第${cid}关 - ${cname}`);
+  }else{
+    showToast("课程文件未找到");
+  }
+}
+
+function renderWelcomeCards(){
+  const wc=document.getElementById("wc");
+  wc.innerHTML=COURSEDATA.targets.map((t,i)=>`<div class="card" onclick="openTarget(${i})"><div class="card-i">🎯</div><div class="card-t">${t.name}</div><div class="card-d">${t.chapters.length} 章</div></div>`).join("");
+}
+
+function openTarget(tidx){
+  curTarget=tidx;
+  const el=document.querySelectorAll(".cat-hdr")[tidx];
+  if(el)toggleCat(el);
+  const ch=COURSEDATA.targets[tidx].chapters[0];
+  if(ch)loadCh(tidx,ch.id,ch.name);
+}
+
+function renderResources(){
+  const rl=document.getElementById("rl");
+  rl.innerHTML=`<div class="r-sec"><div class="r-sec-t">📖 当前课程</div><div class="r-item"><div class="r-ico">📚</div><div class="r-info"><div class="r-name">Python基础语法</div><div class="r-type">试学课程</div></div></div></div><div class="r-sec"><div class="r-sec-t">🐍 实操环境</div><div class="r-item"><div class="r-ico">🐍</div><div class="r-info"><div class="r-name">Pyodide</div><div class="r-type">浏览器端Python</div></div></div></div>`;
+}
+
+function switchMode(m){
+  mode=m;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.m===m));
+  document.querySelectorAll(".view").forEach((v,i)=>{
+    v.classList.toggle("on",m==="read"?i===1:m==="code"?i===2:i===3);
+  });
+}
+
+function showHelp(){
+  alert("📖 使用指南\n\n1. 点击左侧目标展开章节列表\n2. 点击章节名称加载课程内容\n3. 切换「阅读/实操/练习」模式\n4. 代码模式可运行 Python\n\n💡 提示：学习进度自动保存！");
+}
+
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
+}
+
+async function runPy(){
+  const ed=document.getElementById("ed"),oc=document.getElementById("oc"),ost=document.getElementById("ost");
+  if(!pyodide){ost.textContent="加载中";ost.className="st ld";oc.textContent="正在初始化 Pyodide...";
+    try{pyodide=await loadPyodide();ost.textContent="就绪";ost.className="st ok";}catch(e){oc.textContent="加载失败: "+e.message;return;}
+  }
+  ost.textContent="运行中";oc.textContent+="\n\n>>> "+ed.value.split("\n").join("\n>>> ")+"\n";
+  try{let r=await pyodide.runPythonAsync(ed.value);if(r)oc.textContent+="\n"+r.toString();}catch(e){oc.textContent+="\n❌ "+e.message;}
+  ost.textContent="完成";setTimeout(()=>{ost.textContent="就绪";ost.className="st ok";},1500);
+}
+
+document.getElementById("ed").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();runPy();}});
+window.onload=init;
+</script>
+</body>
+</html>
+

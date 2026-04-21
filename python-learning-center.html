@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 编程学习中心 | CodeMaster</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- CodeMirror for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --card: #1a1a25;
+            --hover: #222235;
+            --border: rgba(255,255,255,0.06);
+            --cyan: #00d4ff;
+            --violet: #a78bfa;
+            --emerald: #34d399;
+            --amber: #fbbf24;
+            --rose: #fb7185;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'Noto Sans SC', system-ui, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body { height: 100%; overflow: hidden; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* 背景 */
+        .bg {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(167,139,250,0.06) 0%, transparent 50%);
+        }
+
+        /* 主容器 */
+        .app {
+            display: grid; grid-template-columns: 280px 1fr 320px;
+            height: 100vh; position: relative; z-index: 1;
+        }
+
+        /* ========== 左侧栏 ========== */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px; border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+        }
+        .brand-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, var(--cyan), var(--violet));
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .brand h1 { font-size: 16px; font-weight: 700; }
+        .brand span { font-size: 11px; color: var(--muted); display: block; }
+
+        .stats {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+        }
+        .stat {
+            background: var(--card); border-radius: 8px; padding: 10px 8px; text-align: center;
+        }
+        .stat-val { font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: var(--cyan); }
+        .stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+
+        .courses-panel {
+            flex: 1; overflow-y: auto; padding: 12px;
+        }
+        .courses-panel::-webkit-scrollbar { width: 3px; }
+        .courses-panel::-webkit-scrollbar-thumb { background: var(--card); border-radius: 2px; }
+
+        .empty-hint {
+            padding: 40px 16px; text-align: center; color: var(--muted); font-size: 13px;
+        }
+        .empty-hint p { font-size: 36px; margin-bottom: 12px; }
+
+        .cat { margin-bottom: 12px; }
+        .cat-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; background: var(--card); border-radius: 8px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .cat-header:hover { background: var(--hover); }
+        .cat-header.open { border-left: 3px solid var(--cyan); }
+        .cat-icon { font-size: 16px; }
+        .cat-info { flex: 1; min-width: 0; }
+        .cat-name { font-size: 13px; font-weight: 600; }
+        .cat-meta { font-size: 10px; color: var(--muted); }
+        .cat-arrow { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+        .cat-header.open .cat-arrow { transform: rotate(180deg); color: var(--cyan); }
+
+        .lessons { display: none; padding-left: 6px; margin-top: 4px; }
+        .lessons.open { display: block; }
+
+        .lesson {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px; border-radius: 6px; cursor: pointer;
+            transition: all 0.15s; margin-bottom: 2px;
+        }
+        .lesson:hover { background: var(--card); }
+        .lesson.active { background: var(--hover); }
+        .lesson.done { opacity: 0.7; }
+
+        .lesson-num {
+            width: 24px; height: 24px; background: var(--card); border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 600; font-family: var(--font-mono); color: var(--muted);
+        }
+        .lesson.active .lesson-num { background: var(--cyan); color: var(--bg); }
+        .lesson.done .lesson-num { background: var(--emerald); color: white; }
+
+        .lesson-title {
+            flex: 1; font-size: 12px; color: var(--muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .lesson.active .lesson-title, .lesson.done .lesson-title { color: var(--text); }
+
+        .lesson-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--card); flex-shrink: 0;
+        }
+        .lesson.done .lesson-dot { background: var(--emerald); }
+
+        /* ========== 主内容区 ========== */
+        .main {
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* 顶部栏 */
+        .topbar {
+            padding: 14px 24px; background: rgba(18,18,26,0.9); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+        .menu-btn {
+            display: none; width: 38px; height: 38px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 8px; color: var(--muted);
+            cursor: pointer; align-items: center; justify-content: center;
+        }
+        .breadcrumb { font-size: 14px; color: var(--muted); }
+        .breadcrumb strong { color: var(--text); font-weight: 500; }
+
+        .actions { display: flex; gap: 8px; }
+        .btn {
+            padding: 8px 16px; background: var(--card); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text); font-size: 12px; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .btn:hover { background: var(--hover); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--violet));
+            border: none; color: white; font-weight: 600;
+        }
+        .btn-primary:hover { box-shadow: 0 4px 20px rgba(0,212,255,0.3); }
+        .btn-icon { padding: 8px; }
+        .btn svg { width: 14px; height: 14px; }
+
+        /* 内容 */
+        .content { flex: 1; overflow: hidden; position: relative; }
+
+        /* 欢迎页 */
+        .welcome {
+            height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 40px; text-align: center;
+        }
+        .welcome-icon {
+            width: 120px; height: 120px;
+            background: linear-gradient(135deg, var(--cyan), var(--violet));
+            border-radius: 32px; font-size: 56px; display: flex;
+            align-items: center; justify-content: center; margin-bottom: 28px;
+            box-shadow: 0 20px 60px rgba(0,212,255,0.2);
+        }
+        .welcome h1 {
+            font-size: 30px; font-weight: 700; margin-bottom: 12px;
+            background: linear-gradient(90deg, var(--text), var(--cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .welcome p { font-size: 14px; color: var(--muted); max-width: 480px; margin-bottom: 32px; }
+
+        .cards { display: flex; gap: 16px; }
+        .card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; width: 160px; text-align: left; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .card:hover { transform: translateY(-4px); border-color: var(--cyan); }
+        .card-icon { font-size: 24px; margin-bottom: 10px; }
+        .card h3 { font-size: 13px; margin-bottom: 4px; }
+        .card p { font-size: 11px; color: var(--muted); }
+
+        /* 学习器 */
+        .learner { display: none; flex-direction: column; height: 100%; }
+        .learner.active { display: flex; }
+
+        .learner-bar {
+            padding: 12px 20px; background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px;
+        }
+
+        /* 模式切换 */
+        .mode-switch {
+            display: flex; background: var(--card); border-radius: 8px; padding: 3px;
+        }
+        .mode-btn {
+            padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
+            color: var(--muted); cursor: pointer; transition: all 0.2s; display: flex;
+            align-items: center; gap: 6px;
+        }
+        .mode-btn:hover { color: var(--text); }
+        .mode-btn.active { background: linear-gradient(135deg, var(--cyan), var(--violet)); color: white; }
+        .mode-btn svg { width: 14px; height: 14px; }
+
+        .nav-group { display: flex; align-items: center; gap: 8px; }
+        .nav-btn {
+            width: 34px; height: 34px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 8px; color: var(--muted);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .nav-btn svg { width: 14px; height: 14px; }
+
+        .learner-pos { font-size: 12px; font-family: var(--font-mono); color: var(--muted); white-space: nowrap; }
+
+        .bar-actions { display: flex; gap: 6px; }
+
+        /* 主内容框架 */
+        .content-frame {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* 阅读模式 */
+        .read-mode { display: none; flex-direction: column; height: 100%; }
+        .read-mode.active { display: flex; }
+        .read-frame {
+            flex: 1; background: #1a1a1a; border: none;
+        }
+
+        /* 实操模式 */
+        .code-mode { display: none; flex-direction: column; height: 100%; }
+        .code-mode.active { display: flex; }
+
+        .code-split {
+            display: grid; grid-template-columns: 1fr 1fr; flex: 1; overflow: hidden;
+        }
+        .code-editor-wrap {
+            display: flex; flex-direction: column; border-right: 1px solid var(--border);
+        }
+        .code-header {
+            padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+            font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px;
+        }
+        .code-header svg { width: 14px; height: 14px; }
+
+        .code-editor { flex: 1; overflow: hidden; }
+        .code-editor .CodeMirror {
+            height: 100%; font-family: var(--font-mono); font-size: 14px;
+            background: var(--bg); padding: 12px;
+        }
+        .code-editor .CodeMirror-gutters { background: var(--surface); border-right: 1px solid var(--border); }
+        .code-editor .CodeMirror-linenumber { color: var(--muted); }
+
+        .code-output {
+            display: flex; flex-direction: column; background: var(--bg);
+        }
+        .output-header {
+            padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+            font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px;
+        }
+        .output-header svg { width: 14px; height: 14px; }
+        .output-content {
+            flex: 1; overflow: auto; padding: 16px; font-family: var(--font-mono);
+            font-size: 13px; white-space: pre-wrap; color: var(--text);
+        }
+        .output-content .error { color: var(--rose); }
+        .output-content .success { color: var(--emerald); }
+
+        .code-footer {
+            padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border);
+            display: flex; gap: 8px;
+        }
+        .code-footer .btn { padding: 8px 16px; }
+        .code-status {
+            margin-left: auto; font-size: 11px; color: var(--muted);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+        .status-dot.ready { background: var(--emerald); }
+        .status-dot.running { background: var(--amber); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* 加载状态 */
+        .pyodide-loading {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 16px;
+        }
+        .pyodide-loading.hidden { display: none; }
+        .pyodide-loading .spinner {
+            width: 40px; height: 40px; border: 3px solid var(--border);
+            border-top-color: var(--cyan); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .pyodide-loading span { color: var(--muted); font-size: 13px; }
+
+        /* 练习模式 */
+        .practice-mode { display: none; flex-direction: column; height: 100%; padding: 24px; overflow-y: auto; }
+        .practice-mode.active { display: flex; }
+        .practice-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 24px; margin-bottom: 16px;
+        }
+        .practice-card h3 { font-size: 16px; margin-bottom: 12px; color: var(--cyan); }
+        .practice-card p { font-size: 14px; color: var(--text); margin-bottom: 16px; }
+        .practice-input {
+            width: 100%; background: var(--bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px; color: var(--text); font-family: var(--font-mono);
+            font-size: 13px; resize: vertical; min-height: 120px;
+        }
+        .practice-input:focus { outline: none; border-color: var(--cyan); }
+
+        /* ========== 右侧资料栏 ========== */
+        .materials {
+            background: var(--surface); border-left: 1px solid var(--border);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .materials-header {
+            padding: 16px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .materials-header h2 {
+            font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+        }
+        .materials-header h2 svg { width: 16px; height: 16px; color: var(--cyan); }
+        .collapse-btn {
+            width: 28px; height: 28px; background: var(--card); border: 1px solid var(--border);
+            border-radius: 6px; color: var(--muted); cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .collapse-btn:hover { background: var(--hover); }
+        .collapse-btn svg { width: 14px; height: 14px; }
+
+        .materials-content { flex: 1; overflow-y: auto; padding: 12px; }
+        .materials-content::-webkit-scrollbar { width: 3px; }
+        .materials-content::-webkit-scrollbar-thumb { background: var(--card); }
+
+        .mat-group { margin-bottom: 16px; }
+        .mat-group-header {
+            font-size: 11px; color: var(--muted); text-transform: uppercase;
+            letter-spacing: 1px; padding: 8px 10px; display: flex; align-items: center; gap: 8px;
+        }
+        .mat-group-header span { font-size: 14px; }
+
+        .mat-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; background: var(--card); border-radius: 8px;
+            cursor: pointer; transition: all 0.2s; margin-bottom: 4px;
+        }
+        .mat-item:hover { background: var(--hover); }
+        .mat-icon { font-size: 18px; }
+        .mat-info { flex: 1; min-width: 0; }
+        .mat-name {
+            font-size: 12px; color: var(--text); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .mat-meta { font-size: 10px; color: var(--muted); }
+        .mat-action { color: var(--muted); }
+        .mat-action:hover { color: var(--cyan); }
+
+        /* 提示 */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            padding: 12px 20px; background: var(--card);
+            border: 1px solid var(--border); border-radius: 10px;
+            font-size: 13px; transform: translateX(120%); transition: transform 0.3s;
+            z-index: 1000; backdrop-filter: blur(10px);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-color: var(--emerald); color: var(--emerald); }
+        .toast.error { border-color: var(--rose); color: var(--rose); }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .app { grid-template-columns: 280px 1fr; }
+            .materials { display: none; }
+        }
+        @media (max-width: 768px) {
+            .app { grid-template-columns: 1fr; }
+            .sidebar { position: fixed; left: 0; top: 0; width: 280px; height: 100%; transform: translateX(-100%); transition: transform 0.3s; z-index: 50; }
+            .sidebar.open { transform: translateX(0); }
+            .menu-btn { display: flex; }
+            .cards { flex-direction: column; }
+            .code-split { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="bg"></div>
+
+    <div class="app">
+        <!-- ========== 左侧栏 ========== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand">
+                    <div class="brand-icon">&lt;/&gt;</div>
+                    <div>
+                        <h1>Python 学习</h1>
+                        <span>编程学习中心</span>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-val" id="statTotal">0</div>
+                        <div class="stat-label">课程</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-val" id="statDone">0</div>
+                        <div class="stat-label">完成</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-val" id="statPct">0%</div>
+                        <div class="stat-label">进度</div>
+                    </div>
+                </div>
+            </div>
+            <div class="courses-panel" id="coursesPanel">
+                <div class="empty-hint">
+                    <p>📂</p>
+                    <p>点击下方「导入课程」<br>选择风变编程文件夹</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ========== 主内容 ========== -->
+        <main class="main">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <button class="menu-btn" onclick="toggleSidebar()">
+                        <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
+                    </button>
+                    <div class="breadcrumb" id="breadcrumb">欢迎使用</div>
+                </div>
+                <div class="actions">
+                    <button class="btn" onclick="goHome()">
+                        <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-9M3 9h6M3 9v6"/></svg>
+                        首页
+                    </button>
+                    <button class="btn btn-primary" onclick="importFolder()">
+                        <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h4l2 2h6a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+                        导入课程
+                    </button>
+                </div>
+            </div>
+
+            <div class="content">
+                <!-- 欢迎页 -->
+                <div class="welcome" id="welcome">
+                    <div class="welcome-icon">🐍</div>
+                    <h1>Python 编程学习中心</h1>
+                    <p>导入风变编程课程文件夹，开启交互式编程学习之旅。支持边学边练、代码实操、课后练习。</p>
+                    <div class="cards">
+                        <div class="card" onclick="importFolder()">
+                            <div class="card-icon">📂</div>
+                            <h3>导入课程</h3>
+                            <p>选择课程文件夹</p>
+                        </div>
+                        <div class="card" onclick="showHelp()">
+                            <div class="card-icon">❓</div>
+                            <h3>使用帮助</h3>
+                            <p>了解如何操作</p>
+                        </div>
+                        <div class="card" onclick="clearData()">
+                            <div class="card-icon">🗑️</div>
+                            <h3>清除数据</h3>
+                            <p>重置学习进度</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学习器 -->
+                <div class="learner" id="learner">
+                    <div class="learner-bar">
+                        <!-- 模式切换 -->
+                        <div class="mode-switch">
+                            <div class="mode-btn active" data-mode="read" onclick="switchMode('read')">
+                                <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h12"/></svg>
+                                阅读
+                            </div>
+                            <div class="mode-btn" data-mode="code" onclick="switchMode('code')">
+                                <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+                                实操
+                            </div>
+                            <div class="mode-btn" data-mode="practice" onclick="switchMode('practice')">
+                                <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                                练习
+                            </div>
+                        </div>
+
+                        <!-- 导航 -->
+                        <div class="nav-group">
+                            <button class="nav-btn" id="prevBtn" onclick="prevLesson()">
+                                <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M15 8l-6 6M15 8H9M15 8v6"/></svg>
+                            </button>
+                            <button class="nav-btn" id="nextBtn" onclick="nextLesson()">
+                                <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M9 8l6 6M9 8h6M9 8v6"/></svg>
+                            </button>
+                        </div>
+
+                        <div class="learner-pos" id="learnerPos">0 / 0</div>
+
+                        <div class="bar-actions">
+                            <button class="btn" onclick="markDone()">
+                                <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+                                完成
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 内容框架 -->
+                    <div class="content-frame">
+                        <!-- 阅读模式 -->
+                        <div class="read-mode active" id="readMode">
+                            <iframe class="read-frame" id="readFrame"></iframe>
+                        </div>
+
+                        <!-- 实操模式 -->
+                        <div class="code-mode" id="codeMode">
+                            <div class="pyodide-loading" id="pyodideLoading">
+                                <div class="spinner"></div>
+                                <span>正在加载 Python 运行环境...</span>
+                            </div>
+                            <div class="code-split" id="codeSplit" style="display:none;">
+                                <div class="code-editor-wrap">
+                                    <div class="code-header">
+                                        <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+                                        Python 编辑器
+                                    </div>
+                                    <div class="code-editor" id="codeEditor"></div>
+                                    <div class="code-footer">
+                                        <button class="btn btn-primary" onclick="runCode()">
+                                            <svg fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+                                            运行代码
+                                        </button>
+                                        <button class="btn" onclick="resetCode()">
+                                            <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v4h4M23 8v-4h-4M3.5 9a9 9 0 1015-3"/></svg>
+                                            重置
+                                        </button>
+                                        <button class="btn" onclick="saveCode()">
+                                            <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>
+                                            保存
+                                        </button>
+                                        <div class="code-status">
+                                            <div class="status-dot" id="statusDot"></div>
+                                            <span id="statusText">就绪</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="code-output">
+                                    <div class="output-header">
+                                        <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+                                        输出结果
+                                    </div>
+                                    <div class="output-content" id="outputContent">
+                                        <span style="color:var(--muted)">点击「运行代码」查看输出结果...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 练习模式 -->
+                        <div class="practice-mode" id="practiceMode">
+                            <div class="practice-card">
+                                <h3>📝 课后练习</h3>
+                                <p>完成以下练习题，巩固本节所学知识。</p>
+                                <textarea class="practice-input" id="practiceInput" placeholder="在这里编写你的代码..."></textarea>
+                            </div>
+                            <div class="code-footer" style="margin-top:16px;">
+                                <button class="btn btn-primary" onclick="runPractice()">
+                                    <svg fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+                                    提交答案
+                                </button>
+                                <button class="btn" onclick="clearPractice()">清空</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ========== 右侧资料栏 ========== -->
+        <aside class="materials" id="materials">
+            <div class="materials-header">
+                <h2>
+                    <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                    学习资料
+                </h2>
+                <button class="collapse-btn" onclick="toggleMaterials()">
+                    <svg fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+            </div>
+            <div class="materials-content" id="materialsContent">
+                <div class="empty-hint" style="padding:40px 16px;">
+                    <p>📎</p>
+                    <p style="font-size:12px;">导入课程后<br>相关资料将显示在这里</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <input type="file" id="folderInput" webkitdirectory multiple style="display:none" onchange="handleFiles(event)">
+
+    <!-- Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+
