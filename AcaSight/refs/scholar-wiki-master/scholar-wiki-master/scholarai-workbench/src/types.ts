@@ -1,0 +1,581 @@
+export interface GraphNode {
+  id: string;
+  library_id?: string;
+  label?: string;
+  name?: string;
+  type?: string;
+  x?: number;
+  y?: number;
+  z?: number;
+  validated_variable?: boolean;
+  relation_degree?: number;
+  latest_concept?: string;
+  latest_theories?: string[];
+  latest_concept_source?: {
+    paper_id?: string;
+    publication_year?: number;
+  };
+  aliases?: string[];
+  alias_count?: number;
+  first_year?: number;
+  canonical_var_id?: string;
+  paper_count?: number;
+  paper_profile?: Record<string, unknown>;
+  dominant_paper_id?: string;
+  paper_entropy?: number;
+}
+
+export interface GraphEdge {
+  source: string | GraphNode;
+  target: string | GraphNode;
+  paper_id?: string;
+  doi?: string;
+  direction?: string;
+  relation_form?: string;
+  verification?: string;
+  evidence_section?: string;
+  evidence_snippet?: string;
+  evidence_anchor?: string;
+  display_effect_class?: string;
+  hypothesis_label?: string;
+  description?: string;
+  strength?: number;
+  paper_year?: number;
+  relation_type_std?: string;
+}
+
+export interface ModerationLink {
+  moderator_var: string;
+  moderator_node_id: string;
+  moderator_alias_json?: string[];
+  moderated_relation: {
+    source: string;
+    target: string;
+  };
+  direction?: string;
+  verification?: string;
+  hypothesis_label?: string;
+  evidence_section?: string;
+  evidence_snippet?: string;
+}
+
+export interface InteractionLink {
+  inputs: string[];
+  input_node_ids: string[];
+  output: string;
+  output_node_id: string;
+  interaction_type?: string;
+  moderator?: string;
+  moderator_node_id?: string;
+  effect?: string;
+  verification?: string;
+  hypothesis_label?: string;
+  evidence_section?: string;
+  evidence_snippet?: string;
+  description?: string;
+}
+
+export interface GraphOverview {
+  meta: {
+    paper_count?: number;
+    node_count?: number;
+    edge_count?: number;
+    [key: string]: unknown;
+  };
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  moderation_links: ModerationLink[];
+  interaction_links: InteractionLink[];
+  isolated_nodes?: IsolatedNode[];
+}
+
+export interface GraphFull extends GraphOverview {
+  paper_map: Record<string, PaperDetail>;
+}
+
+export interface IsolatedNode {
+  node_id: string;
+  label?: string;
+  reason?: string;
+}
+
+export interface NeighborhoodResponse {
+  node_id: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  moderation_links: ModerationLink[];
+  interaction_links: InteractionLink[];
+}
+
+export interface SearchResult {
+  id: string;
+  kind: string;
+  title?: string;
+  score: number;
+  [key: string]: unknown;
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+  search_meta: {
+    vector_backend_requested?: string;
+    vector_backend_used?: string;
+    note?: string;
+  };
+}
+
+export interface PaperDetail {
+  paper_id: string;
+  paper_id_raw?: string;
+  paper_key?: string;
+  library_id?: string;
+  doi?: string;
+  title?: string;
+  display_title?: string;
+  source_pdf_name?: string;
+  source_md_path?: string;
+  source_pdf_path?: string;
+  offline_html_path?: string;
+  article_url?: string;
+  publication_date?: string;
+  online_date?: string;
+  publication_year?: number;
+  paper_citation_count?: number;
+  extractability_status?: string;
+  paper_type?: string;
+  extractability_reason?: string;
+  extractability_evidence_section?: string;
+  paper_domains?: string[];
+  context_variables?: string[];
+  operationalization?: Record<string, { operationalized_as: string[] }>;
+  variable_definitions?: VariableDefinition[];
+  main_effects?: MainEffect[];
+  moderations?: ModerationLink[];
+  interactions?: InteractionLink[];
+  [key: string]: unknown;
+}
+
+export interface VariableDefinition {
+  variable: string;
+  aliases?: string[];
+  definition?: string;
+  definition_evidence_section?: string;
+  measurement?: string;
+  measurement_text?: string;
+  measurement_methods?: Array<string | { variable?: string; variable_name?: string; operationalized_as?: string[] }>;
+}
+
+export interface MainEffect {
+  from: string;
+  to: string;
+  direction?: string;
+  effect?: string;
+  hypothesis_label?: string;
+  verification?: string;
+  evidence_section?: string;
+  evidence_snippet?: string;
+  description?: string;
+}
+
+export interface VariableDetail {
+  node: GraphNode;
+  paper_count_total: number;
+  paper_count_edge: number;
+  paper_count_moderation: number;
+  paper_count_interaction: number;
+  papers: VariablePaper[];
+  paper_groups: VariablePaperGroup[];
+}
+
+export interface VariablePaper {
+  paper_id: string;
+  doi?: string;
+  mentions: unknown;
+  [key: string]: unknown;
+}
+
+export interface VariablePaperGroup {
+  paper_id: string;
+  doi?: string;
+  publication_year?: number;
+  open_local_html?: string;
+  open_online_url?: string;
+  concepts: string[];
+  measurement_methods: Array<string | { variable?: string; variable_name?: string; operationalized_as?: string[] }>;
+  relations: VariableRelation[];
+}
+
+export interface VariableRelation {
+  type: 'direct_effect' | 'moderation' | 'interaction';
+  direction?: string;
+  source?: string;
+  target?: string;
+  verification?: string;
+  [key: string]: unknown;
+}
+
+export interface ChatSession {
+  session_id: string;
+  title: string;
+  default_mode: 'fast' | 'agent';
+  library_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ChatMessage {
+  message_id: string;
+  session_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  status: 'running' | 'completed' | 'failed';
+  citations?: Citation[];
+  retrieval?: Record<string, unknown>;
+  tool_trace?: ToolCall[];
+  error_detail?: string;
+  created_at?: string;
+}
+
+export interface Citation {
+  id?: string;
+  paper_id?: string;
+  title?: string;
+  text?: string;
+  sentence?: string;
+  paragraph?: string;
+  context?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface ToolCall {
+  name?: string;
+  arguments?: unknown;
+  result?: unknown;
+  [key: string]: unknown;
+}
+
+export interface SendMessageResponse {
+  session_id: string;
+  assistant_message_id: string;
+  user_message_id: string;
+  stream_url: string;
+}
+
+export interface SSEEvent {
+  type: string;
+  data: string;
+}
+
+export interface PipelineJob {
+  job_id: string;
+  display_name?: string;
+  file_name?: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status_code?: string;
+  stage?: string;
+  stage_code?: string;
+  stage_label?: string;
+  progress?: number;
+  library_id: string;
+  workspace_path?: string;
+  input_path?: string;
+  output_path?: string;
+  error_code?: string;
+  error_detail?: string;
+  can_cancel?: boolean;
+  can_retry?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PipelineJobList {
+  jobs: PipelineJob[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface SemanticVariableMatch {
+  id: string;
+  score: number;
+  library_id: string;
+  paper_id: string;
+  variable_name: string;
+  canonical_var_id: string;
+  concept_text: string;
+  node_id: string;
+}
+
+export interface SemanticVariableSearchResponse {
+  ok: boolean;
+  query: string;
+  top_k: number;
+  library_ids: string[];
+  matched_variables: SemanticVariableMatch[];
+}
+
+export interface SemanticNeighborVariable {
+  node_id: string;
+  variable_name: string;
+  concept_text: string;
+  library_id: string;
+}
+
+export interface SemanticNeighborResultItem {
+  library_id: string;
+  matched: SemanticNeighborVariable | null;
+  cause_variables: SemanticNeighborVariable[];
+  effect_variables: SemanticNeighborVariable[];
+}
+
+export interface SemanticVariableNeighborsResponse {
+  ok: boolean;
+  variable_name: string;
+  top_k: number;
+  library_ids: string[];
+  results: SemanticNeighborResultItem[];
+}
+
+export interface PipelineBatchSubmitResponse {
+  library_id: string;
+  accepted_count: number;
+  rejected_count: number;
+  accepted: PipelineJob[];
+  rejected: Array<{ file_name?: string; error?: string }>;
+}
+
+export interface PipelineBatchActionItem {
+  action: 'cancel' | 'retry' | 'delete';
+  job_id: string;
+  status?: string;
+  error?: string;
+  [key: string]: unknown;
+}
+
+export interface PipelineBatchActionResponse {
+  action: 'cancel' | 'retry' | 'delete';
+  total: number;
+  success_count: number;
+  failure_count: number;
+  results: PipelineBatchActionItem[];
+}
+
+export interface PipelineAgentEvent {
+  seq: number;
+  ts: string;
+  job_id: string;
+  backend: string;
+  method: string;
+  params: Record<string, unknown>;
+}
+
+export interface LiteratureLibrary {
+  library_id: string;
+  paper_count: number;
+  updated_at: string;
+  path: string;
+}
+
+export interface LibrariesResponse {
+  libraries: LiteratureLibrary[];
+  default_library_id: string;
+}
+
+export interface LiteraturePaper {
+  library_id: string;
+  paper_id: string;
+  raw_paper_id?: string;
+  title: string;
+  display_title?: string;
+  doi?: string;
+  authors_json?: Array<Record<string, unknown> | string>;
+  journal?: string;
+  publication_date?: string;
+  publication_year?: number | null;
+  article_url?: string;
+  source_pdf_path?: string;
+  source_md_path?: string;
+  source_html_path?: string;
+  offline_html_path?: string;
+  files: {
+    pdf: boolean;
+    markdown: boolean;
+    html: boolean;
+  };
+}
+
+export interface LiteraturePapersResponse {
+  library_id: string;
+  paper_count: number;
+  papers: LiteraturePaper[];
+}
+
+export interface LiteratureSearchHit {
+  paper_id?: string;
+  doi?: string;
+  title?: string;
+  sentence?: string;
+  paragraph?: string;
+  score?: number;
+  [key: string]: unknown;
+}
+
+export interface LiteratureSearchResponse {
+  query: string;
+  library_id: string;
+  top_k: number;
+  levels: string[];
+  keyword_hits: LiteratureSearchHit[];
+  rag_hits: LiteratureSearchHit[];
+  merged_hits: LiteratureSearchHit[];
+  degraded?: boolean;
+  degraded_reason?: string;
+  search_meta?: Record<string, unknown>;
+}
+
+export interface LiteratureAnswerResponse {
+  answer: string;
+  citations: Citation[];
+  retrieval: {
+    merged_hits: LiteratureSearchHit[];
+    [key: string]: unknown;
+  };
+}
+
+export interface WorkspaceLayout {
+  name: string;
+  layout: Record<string, unknown>;
+}
+
+export interface PaperFilesFileInfo {
+  path: string;
+  name: string;
+  size_bytes: number;
+}
+
+export interface PaperFiles {
+  paper_id: string;
+  library_id: string;
+  files: {
+    pdf?: PaperFilesFileInfo;
+    markdown?: PaperFilesFileInfo;
+    html?: PaperFilesFileInfo;
+  };
+  default_view: 'pdf' | 'markdown' | 'html' | 'none';
+  content_list_v2_path: string;
+}
+
+export interface TranslationProviderConfig {
+  provider: string;
+  model: string;
+  api_key: string;
+  base_url: string;
+  endpoint_url: string;
+  target_lang: string;
+}
+
+export interface TranslateResponse {
+  translated_text: string;
+  formatted_text?: string;
+  compare_by_paragraph?: boolean;
+  translated_blocks?: number;
+  provider: string;
+  model: string;
+  target_lang: string;
+  latency_ms: number;
+}
+
+export interface TranslateJobSubmitResponse {
+  job_id: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  progress: number;
+}
+
+export interface TranslateJobStatusResponse {
+  job_id: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  progress: number;
+  created_at?: string;
+  updated_at?: string;
+  error?: string;
+  result?: TranslateResponse | null;
+}
+
+export interface SettingsCategorySchemaField {
+  key: string;
+  type?: string;
+  sensitive?: boolean;
+  options?: string[];
+}
+
+export interface SettingsCategorySchema {
+  id: string;
+  title: string;
+  restart_required?: boolean;
+  fields?: SettingsCategorySchemaField[];
+}
+
+export interface GlobalSettingsSchema {
+  version: number;
+  categories: SettingsCategorySchema[];
+}
+
+export interface GlobalSettingsPayload {
+  schema: GlobalSettingsSchema;
+  settings: Record<string, Record<string, unknown>>;
+  updated_at: string;
+}
+
+export interface AgentTemplatePayload {
+  target: string;
+  path: string;
+  exists: boolean;
+  content: string;
+}
+
+export type View = 'library' | 'graph' | 'chat' | 'reader' | 'pipeline' | 'settings';
+
+// ── Zotero import types ──────────────────────────────────────────────
+
+export interface ZoteroCreatorInfo {
+  first_name: string;
+  last_name: string;
+  creator_type: string;
+}
+
+export interface ZoteroItemInfo {
+  item_id: number;
+  key: string;
+  item_type: string;
+  title: string;
+  date: string;
+  publication_title: string;
+  volume: string;
+  issue: string;
+  pages: string;
+  doi: string;
+  abstract: string;
+  url: string;
+  creators: ZoteroCreatorInfo[];
+  pdf_paths: string[];
+  note_count: number;
+  annotation_count: number;
+  collections: string[];
+}
+
+export interface ZoteroCollectionInfo {
+  collection_id: number;
+  name: string;
+  parent_id: number | null;
+}
+
+export interface ZoteroScanResponse {
+  items: ZoteroItemInfo[];
+  total_count: number;
+  collections: ZoteroCollectionInfo[];
+}
+
+export interface ZoteroImportResponse {
+  job_ids: string[];
+  count: number;
+}

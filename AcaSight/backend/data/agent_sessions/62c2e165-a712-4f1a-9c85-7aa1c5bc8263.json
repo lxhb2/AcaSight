@@ -1,0 +1,17 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "请帮我分析这篇论文的研究方法和主要发现"
+    },
+    {
+      "role": "assistant",
+      "content": "根据您提供的PDF标题，这篇论文（2004年发表于RNA期刊）研究了人类microRNA（miRNA）的加工机制。以下是可能的研究方法和主要发现：\n\n### 研究方法\n1. **实验设计**：\n   - 可能包括对microRNA前体的转录特征分析，如5'端加帽和3'端多聚腺苷化的验证。\n   - 使用Northern blot和RT-PCR等技术定量分析microRNA的表达和加工过程。\n   - 验证microRNA前体是否具有mRNA的双重功能。\n\n2. **技术路线**：\n   - 分子生物学技术（如克隆、测序）用于鉴定microRNA前体的结构。\n   - 细胞实验验证microRNA前体的功能。\n\n### 主要发现\n1. **转录特征**：\n   - 发现microRNA前体具有5'端加帽和3'端多聚腺苷化的特征，类似于mRNA。\n   \n2. **双重功能**：\n   - 实验证据表明，microRNA前体不仅作为microRNA加工的中间产物，还可能具有mRNA的功能。\n\n3. **理论意义**：\n   - 这一发现扩展了对microRNA生物合成的理解，揭示了其与mRNA加工的潜在联系。\n\n由于未提供全文，以上分析基于论文标题和领域背景。如需更详细的分析，请提供PDF全文内容，我将为您生成更精确的摘要和关键发现。"
+    }
+  ],
+  "context": {
+    "pdf_title": "Human microRNAs are processed from capped, polyadenylated transcripts that can also function as mRNAs.pdf"
+  },
+  "created_at": "2026-05-26T13:30:06.421576",
+  "updated_at": "2026-05-26T13:30:38.702872"
+}

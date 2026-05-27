@@ -1,0 +1,43 @@
+{
+  "default_provider": "ollama",
+  "default_model": "qwen3.5:4b",
+  "providers": {
+    "ollama": {
+      "base_url": "http://localhost:11434",
+      "api_key": "",
+      "enabled": true,
+      "model": "qwen3.5:4b"
+    },
+    "openai": {
+      "base_url": "https://api.openai.com/v1",
+      "api_key": "",
+      "enabled": false
+    },
+    "deepseek": {
+      "base_url": "https://api.deepseek.com/v1",
+      "api_key": "",
+      "enabled": false
+    },
+    "siliconflow": {
+      "base_url": "https://api.siliconflow.cn/v1",
+      "api_key": "sk-sbdsiilzehymtpqgfxljudvyggebwjsjicfdcqojrfrskqcg",
+      "enabled": true,
+      "model": "deepseek-ai/DeepSeek-V3"
+    },
+    "minimax": {
+      "base_url": "https://api.minimax.chat/v1",
+      "api_key": "",
+      "enabled": false
+    },
+    "glm": {
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "api_key": "",
+      "enabled": false
+    },
+    "claude": {
+      "base_url": "https://api.anthropic.com",
+      "api_key": "",
+      "enabled": false
+    }
+  }
+}

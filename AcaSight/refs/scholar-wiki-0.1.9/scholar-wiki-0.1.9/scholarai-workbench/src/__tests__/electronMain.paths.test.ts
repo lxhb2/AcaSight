@@ -1,0 +1,42 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+describe('Electron production data paths', () => {
+  it('uses the canonical libraries/workspaces directory for packaged backend workspaces', () => {
+    const source = readFileSync(resolve(__dirname, '../../electron/main.cjs'), 'utf8');
+
+    expect(source).not.toContain('path.join(dataDir, "workspaces")');
+    expect(source).toContain('path.join(dataDir, "libraries", "workspaces")');
+  });
+
+  it('pins packaged backend storage env vars to the user data directory', () => {
+    const source = readFileSync(resolve(__dirname, '../../electron/main.cjs'), 'utf8');
+
+    expect(source).toContain('KN_GRAPH_DATA_DIR: dataDir');
+    expect(source).toContain('KN_GRAPH_WORKSPACES_DIR: workspacesDir');
+    expect(source).toContain('LITERATURE_LIBRARY_WORKSPACES_ROOT: workspacesDir');
+  });
+
+  it('defaults dev Electron to port 8013 while keeping packaged apps on 8014', () => {
+    const source = readFileSync(resolve(__dirname, '../../electron/main.cjs'), 'utf8');
+
+    expect(source).toContain('app.isPackaged ? 8014 : 8013');
+  });
+
+  it('does not enable Mica window material because it can hang maximize in VMs', () => {
+    const source = readFileSync(resolve(__dirname, '../../electron/main.cjs'), 'utf8');
+
+    expect(source).not.toContain('backgroundMaterial: "mica"');
+  });
+
+  it('bundles the packaged backend only as an extra resource', () => {
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8'));
+
+    expect(pkg.build.extraResources).toContainEqual({
+      from: '../dist_exe/kn_graph.exe',
+      to: '.',
+    });
+    expect(pkg.build.files).toContain('!dist/kn_graph.exe');
+  });
+});

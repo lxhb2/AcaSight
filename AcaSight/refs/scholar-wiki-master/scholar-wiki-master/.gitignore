@@ -1,0 +1,71 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+.pytest_cache/
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.uv-cache/
+.uv_cache/
+
+# Local runtime configuration
+.env
+!.env.example
+.mcp.json
+opencode.json
+lib_*.json
+
+# Local editor / agent state
+.obsidian/
+.learnings/
+.worktrees/
+.claude/
+.codex/
+.agents/skills/answer_library_question/
+
+# Generated run artifacts
+outputs/
+logs/
+*.log
+*.sqlite3
+*.db
+
+# One-off local probes
+test_glm.py
+prompt_structure_probe.py
+
+# Local copied references (not project source)
+docs/GitNexus/
+docs/mineru_api_docs/
+docs/
+prompt/
+reference/zotero/
+skills/*
+!skills/templates/
+
+# Frontend
+scholarai-workbench/node_modules/
+scholarai-workbench/dist/
+scholarai-workbench/e2e/screenshots/
+scholarai-workbench/test-results/
+frontend_legacy/**/node_modules/
+frontend_legacy/**/dist/
+.tmp/
+scripts/
+tests/
+
+# PyInstaller build artifacts
+build_pyi/
+dist_exe/
+
+# Legacy manual installer scripts
+setup.nsi
+setup_electron.nsi
+
+# Electron packaging artifacts
+scholarai-workbench/dist-electron-pkg/
+scholarai-workbench/dist-electron/
