@@ -266,6 +266,20 @@ export const searchApi = {
     request<{ fullTextLink: string; source: string }>('/search/core/discover', { method: 'POST', body: JSON.stringify(params) }),
 
   sources: () => request<{ sources: Array<{ id: string; name: string; description: string; url: string }> }>('/search/sources'),
+
+  /** C.2: 搜索结果→入库（单条） */
+  importPaper: (paper: Partial<PaperItem> & { title: string; pdf_url?: string }) =>
+    request<{ status: string; paper: PaperItem; message: string }>('/search/import', {
+      method: 'POST',
+      body: JSON.stringify(paper),
+    }),
+
+  /** C.2: 搜索结果→入库（批量） */
+  batchImportPapers: (papers: (Partial<PaperItem> & { title: string })[], default_tag?: string) =>
+    request<{ status: string; imported: number; skipped: number; imported_titles: string[]; skipped_details: any[] }>('/search/import/batch', {
+      method: 'POST',
+      body: JSON.stringify({ papers, default_tag }),
+    }),
 };
 
 // ==================== AI Config API ====================

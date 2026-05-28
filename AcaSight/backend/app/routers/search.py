@@ -10,6 +10,9 @@ import httpx
 
 from app.services.search_service import LiteratureSearchService, CoreClient
 from app.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.models.paper import Paper
 
 router = APIRouter()
 
@@ -136,4 +139,109 @@ async def get_available_sources():
                 "url": "https://arxiv.org",
             },
         ]
+    }
+
+
+# ==================== C.2: 搜索→入库 ====================
+
+class SearchImportRequest(BaseModel):
+    """搜索结果导入请求"""
+    title: str = Field(..., max_length=500)
+    authors: Optional[List[str]] = None
+    abstract: Optional[str] = None
+    doi: Optional[str] = None
+    pmid: Optional[str] = None
+    arxiv_id: Optional[str] = None
+    openalex_id: Optional[str] = None
+    semanticscholar_id: Optional[str] = None
+    journal: Optional[str] = None
+    year: Optional[int] = None
+    volume: Optional[str] = None
+    issue: Optional[str] = None
+    pages: Optional[str] = None
+    publisher: Optional[str] = None
+    keywords: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    citation_count: Optional[int] = 0
+    pdf_url: Optional[str] = None  # 可选：关联PDF下载链接
+
+
+class SearchBatchImportRequest(BaseModel):
+    """批量搜索导入"""
+    papers: List[SearchImportRequest]
+    default_tag: Optional[str] = None  # 统一打标
+
+
+@router.post("/import")
+async def import_from_search(
+    req: SearchImportRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """将搜索结果导入本地文献库（支持去重）"""
+    # ── 根据 DOI 去重 ──
+    if req.doi:
+        existing = await db.execute(
+            select(Paper).where(Paper.doi == req.doi)
+        )
+        paper = existing.scalar_one_or_none()
+        if paper:
+            return {"status": "exists", "paper": paper.to_dict(), "message": "文献已存在"}
+
+    paper = Paper(**req.model_dump(exclude={'pdf_url'}))
+    db.add(paper)
+    await db.flush()
+    await db.refresh(paper)
+    return {"status": "imported", "paper": paper.to_dict(), "message": "导入成功"}
+
+
+@router.post("/import/batch")
+async def batch_import_from_search(
+    req: SearchBatchImportRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """批量导入搜索结果"""
+    imported, skipped = [], []
+    for pdata in req.papers:
+        # DOI 去重
+        if pdata.doi:
+            existing = await db.execute(
+                select(Paper).where(Paper.doi == pdata.doi)
+            )
+            if existing.scalar_one_or_none():
+                skipped.append({"title": pdata.title, "doi": pdata.doi, "reason": "已存在"})
+                continue
+
+        tags = list(pdata.tags or [])
+        if req.default_tag and req.default_tag not in tags:
+            tags.append(req.default_tag)
+
+        paper = Paper(
+            title=pdata.title,
+            authors=pdata.authors or [],
+            abstract=pdata.abstract,
+            doi=pdata.doi,
+            pmid=pdata.pmid,
+            arxiv_id=pdata.arxiv_id,
+            openalex_id=pdata.openalex_id,
+            semanticscholar_id=pdata.semanticscholar_id,
+            journal=pdata.journal,
+            year=pdata.year,
+            volume=pdata.volume,
+            issue=pdata.issue,
+            pages=pdata.pages,
+            publisher=pdata.publisher,
+            keywords=pdata.keywords or [],
+            tags=tags,
+            citation_count=pdata.citation_count or 0,
+        )
+        db.add(paper)
+        imported.append(pdata.title)
+
+    await db.flush()
+    return {
+        "status": "ok",
+        "imported": len(imported),
+        "skipped": len(skipped),
+        "imported_titles": imported,
+        "skipped_details": skipped,
     }

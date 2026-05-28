@@ -1,7 +1,7 @@
-# AcaSight 学术视界 — 正式技术手册 v8.1
+# AcaSight 学术视界 — 正式技术手册 v8.2
 
-> **生成日期**: 2026-05-27
-> **状态**: 定稿（取代 v8.0 及所有旧版计划文档）
+> **生成日期**: 2026-05-28
+> **状态**: 定稿（取代 v8.1 及所有旧版计划文档）
 > **适用范围**: 开发团队、技术评审、验收测试
 >
 > **权威级别**: 本文档是 AcaSight 唯一的正式技术手册，取代此前所有版本。
@@ -253,7 +253,7 @@ App.tsx
 
 ```
 ✅ Chapter A: 阻断修复 (P0)     ✅ Chapter E: Agent 端到端 (P1)
-✅ v8.0 增量修复 (P1-P2)        🔜 Chapter B: 玻璃浮雕 UI (P1)
+✅ v8.0 增量修复 (P1-P2)        ✅ Chapter B: 玻璃浮雕 UI (P1) — v8.2 完成
 ⏳ Chapter C: 论文数据库 CRUD    ⏳ Chapter D: Markdown 增强
 ⏳ Chapter F: 绘图模块补全        ⏳ Chapter G: RAG 引擎
 ⏳ Chapter H: 学术格式引擎深化    ❌ Chapter I+: 推迟章节
@@ -294,38 +294,34 @@ App.tsx
 
 ---
 
-### Chapter B: 玻璃浮雕 UI（P1，预估 3h）— 🔜 下一章
+### Chapter B: 玻璃浮雕 UI（P1，预估 3h）— ✅ 已完成（v8.2）
 
-> 纯 CSS 变更，低成本高回报，统一视觉风格
+> 纯 CSS 变更，低成本高回报。CSS 变量体系已内置，面板/图标栏/设置面板均引用 CSS 变量。
 
 | # | 任务 | 文件 | 预估 |
 |---|------|------|------|
 | B.1 | CSS 变量体系 | index.css | 1h |
-| B.2 | 面板容器玻璃化 | ObsidianLayout.tsx | 30min |
-| B.3 | 图标栏玻璃化 | ObsidianLayout.tsx | 30min |
-| B.4 | 设置面板玻璃化 | SettingsModal.tsx | 30min |
-| B.5 | 浅色主题适配 | index.css | 30min |
-| B.6 | 绘图面板保持方框 | ChartPanel 不动 | 0min |
+| B.2 | 面板容器玻璃化 | ObsidianLayout.tsx + index.css | ✅ 使用 --glass-bg + backdrop-filter |
+| B.3 | 图标栏玻璃化 | ObsidianLayout.tsx + index.css | ✅ 使用 --glass-icon-bar-bg + blur |
+| B.4 | 设置面板玻璃化 | SettingsModal.tsx + index.css | ✅ 使用 CSS 变量 (var(--glass-bg) 等) |
+| B.5 | 浅色主题适配 | index.css | ✅ v8.2: --glass-bg: rgba(255,255,255,0.95), blur: 4px, 柔和阴影 |
+| B.6 | 绘图面板保持方框 | ChartPanel + index.css | ✅ .panel-charts { border-radius: 0; box-shadow: none; } |
 
-**CSS 变量参考**:
-```css
-:root {
-  --glass-bg: rgba(30, 30, 46, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 16px;
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-}
-```
+**v8.2 B.5 浅色主题调优细节**:
+| 变量 | 旧值 (v8.1 浅色) | 新值 (v8.2) | 说明 |
+|------|-------------------|--------------|------|
+| --glass-bg | rgba(255,255,255,0.78) | rgba(255,255,255,0.95) | 更不透明,纯白卡片感 |
+| --glass-blur | 10px | 4px | 弱化模糊,适应浅色背景 |
+| --glass-shadow | 0 8px 32px rgba(0,0,0,0.10) | stacked shadows (0 2px 16px + inset hairline) | Vercel 风格堆叠阴影 |
+| --glass-icon-bar-bg | rgba(250,250,250,0.82) | rgba(250,250,250,0.96) | 近不透明侧栏 |
+
+**验证状态**: `npm run build` → 44s，零错误 ✅
 
 **验收标准**:
-- 深色模式：面板半透明毛玻璃 + 圆角
-- 浅色模式：面板纯白 + 柔和阴影 + 圆角
-- 科研绘图(ChartPanel)保留方框无圆角
-- `npm run build` 零错误
+- 深色模式：面板半透明毛玻璃 + 圆角 ✅
+- 浅色模式：面板纯白 + 柔和阴影 + 圆角 ✅
+- 科研绘图(ChartPanel)保留方框无圆角 ✅
+- `npm run build` 零错误 ✅
 
 ---
 

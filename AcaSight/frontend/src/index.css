@@ -106,13 +106,14 @@
   --text-secondary:   var(--body);
   --text-muted:       var(--mute);
   --accent-hover:     #0761d1;
-  --glass-bg:         rgba(255, 255, 255, 0.78);
+  /* ─── Glass (Light: pure white cards, soft shadows, minimal blur) ─── */
+  --glass-bg:         rgba(255, 255, 255, 0.95);
   --glass-border:     rgba(0, 0, 0, 0.06);
-  --glass-shadow:     0 8px 32px rgba(0, 0, 0, 0.10);
-  --glass-shadow-sm:  0 2px 12px rgba(0, 0, 0, 0.06);
-  --glass-blur:       10px;
+  --glass-shadow:     0 2px 16px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --glass-shadow-sm:  0 1px 8px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  --glass-blur:       4px;
   --glass-radius:     var(--radius-lg);
-  --glass-icon-bar-bg: rgba(250, 250, 250, 0.82);
+  --glass-icon-bar-bg: rgba(250, 250, 250, 0.96);
   --tab-bg:           var(--canvas-soft);
   --tab-active-bg:    var(--canvas);
   --tree-line:        var(--hairline);

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Search, Filter, Download, BookOpen, Calendar, User, ExternalLink, Star, ChevronDown, X, AlertCircle, Database, BookmarkPlus, CheckCircle2, Loader2, FileText, BarChart3, PieChart, TrendingUp, Inbox } from 'lucide-react';
-import { searchApi, zoteroApi, papersApi } from '@/services/api';
+import { Search, Filter, Download, BookOpen, Calendar, User, ExternalLink, Star, ChevronDown, X, AlertCircle, Database, BookmarkPlus, CheckCircle2, Loader2, FileText, BarChart3, PieChart, TrendingUp, Inbox, Copy } from 'lucide-react';
+import { searchApi, zoteroApi } from '@/services/api';
 import { useFileOpen } from '@/contexts/FileOpenContext';
 import Plotly from 'plotly.js-dist-min';
 import createPlotlyComponent from 'react-plotly.js/factory';
@@ -153,6 +153,7 @@ export const SearchPage: React.FC = () => {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
+  const [dupIds, setDupIds] = useState<Set<string>>(new Set());
   const [totalCount, setTotalCount] = useState(0);
   const [showChart, setShowChart] = useState(false);
 
@@ -268,18 +269,23 @@ export const SearchPage: React.FC = () => {
     setImportingIds(prev => new Set(prev).add(paper.id));
 
     try {
-      await papersApi.create({
+      // 改用 searchApi.importPaper（支持 DOI 去重）
+      const result = await searchApi.importPaper({
         title: paper.title,
         authors: paper.authors,
-        abstract: paper.abstract || null,
-        doi: paper.doi || null,
-        year: paper.year,
-        journal: paper.journal || null,
-        pdf_path: paper.pdf_url || null,
-        citation_count: paper.cited_by_count,
+        abstract: paper.abstract ?? undefined,
+        doi: paper.doi ?? undefined,
+        year: paper.year ?? undefined,
+        journal: paper.journal ?? undefined,
+        pdf_url: paper.pdf_url ?? undefined,
+        citation_count: paper.cited_by_count ?? 0,
         tags: [],
-        keywords: [],
       });
+      if (result.status === 'exists' || result.status === 'already_imported') {
+        setDupIds(prev => new Set(prev).add(paper.id));
+      } else {
+        setImportedIds(prev => new Set(prev).add(paper.id));
+      }
     } catch (e: any) {
       console.warn('Import to DB failed:', e.message);
     }
@@ -289,8 +295,7 @@ export const SearchPage: React.FC = () => {
       next.delete(paper.id);
       return next;
     });
-    setImportedIds(prev => new Set(prev).add(paper.id));
-  }, [importingIds, importedIds]);
+  }, [importingIds]);
 
   const displayedResults = useMemo(
     () => sortPapers(results, selectedSort),
@@ -652,12 +657,13 @@ export const SearchPage: React.FC = () => {
 
                   <button
                     onClick={() => handleImportToDb(paper)}
-                    disabled={importingIds.has(paper.id) || importedIds.has(paper.id)}
+                    disabled={importingIds.has(paper.id) || importedIds.has(paper.id) || dupIds.has(paper.id)}
                     className="search-action-btn"
-                    style={importedIds.has(paper.id) ? { color: '#6366f1', borderColor: '#6366f1' } : {}}
+                    style={importedIds.has(paper.id) ? { color: '#6366f1', borderColor: '#6366f1' } : dupIds.has(paper.id) ? { color: 'var(--mute)', borderColor: 'var(--hairline)' } : {}}
+                    title={dupIds.has(paper.id) ? '该文献已存在于数据库中' : '导入到本地文献库'}
                   >
-                    {importingIds.has(paper.id) ? <Loader2 size={12} className="animate-spin" /> : importedIds.has(paper.id) ? <CheckCircle2 size={12} /> : <Inbox size={12} />}
-                    {importedIds.has(paper.id) ? '已入库' : '入库'}
+                    {importingIds.has(paper.id) ? <Loader2 size={12} className="animate-spin" /> : importedIds.has(paper.id) ? <CheckCircle2 size={12} /> : dupIds.has(paper.id) ? <Copy size={12} /> : <Inbox size={12} />}
+                    {importedIds.has(paper.id) ? '已入库' : dupIds.has(paper.id) ? '已存在' : '入库'}
                   </button>
                 </div>
 
