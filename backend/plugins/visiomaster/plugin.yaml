@@ -1,0 +1,26 @@
+name: visiomaster
+version: 1.0.0
+description: Visio图纸重建 — 将AI生成的流程图、架构图等重建为可编辑的Visio图纸
+author: AcaSight Team
+license: MIT
+
+hooks:
+  - post_chart
+
+provides:
+  - convert_to_visio
+  - export_vsdx
+
+depends: []
+
+permissions:
+  - network
+  - fs_write
+
+entry_point: plugin.py
+
+tags:
+  - visio
+  - diagram
+  - export
+  - vsdx

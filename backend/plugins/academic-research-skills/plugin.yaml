@@ -1,0 +1,37 @@
+name: academic-research-skills
+version: 1.0.0
+description: 学术研究全流程技能包 — 覆盖深度调研、论文撰写、论文审查、格式导出等全流程
+author: AcaSight Team
+license: MIT
+
+hooks:
+  - pre_search
+  - post_search
+  - pre_write
+  - post_write
+  - pre_chart
+  - post_chart
+  - pre_ai_call
+  - post_ai_call
+
+provides:
+  - deep_research_pipeline
+  - literature_review_pipeline
+  - paper_writing_pipeline
+  - paper_review_pipeline
+  - format_export_pipeline
+
+depends: []
+
+permissions:
+  - network
+  - fs_read
+  - fs_write
+
+entry_point: plugin.py
+
+tags:
+  - academic
+  - research
+  - full-pipeline
+  - workflow

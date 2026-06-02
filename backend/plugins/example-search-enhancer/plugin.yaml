@@ -1,0 +1,24 @@
+name: example-search-enhancer
+version: 1.0.0
+description: 示例插件 — 搜索结果增强 (自动翻译标题+添加标签)
+author: AcaSight Team
+license: MIT
+
+hooks:
+  - post_search
+
+provides:
+  - search_title_translate
+  - search_auto_tag
+
+depends: []
+
+permissions:
+  - network
+
+entry_point: plugin.py
+
+tags:
+  - search
+  - enhancement
+  - example

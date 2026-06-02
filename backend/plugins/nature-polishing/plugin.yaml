@@ -1,0 +1,19 @@
+name: nature-polishing
+version: 1.0.0
+description: 自然科学论文润色 — 符合Nature语言风格，提升学术表达质量
+author: AcaSight Team
+license: MIT
+hooks:
+  - post_write
+provides:
+  - polish_nature_style
+  - check_language_quality
+  - suggest_improvements
+depends: []
+permissions:
+  - network
+entry_point: plugin.py
+tags:
+  - nature
+  - polishing
+  - language

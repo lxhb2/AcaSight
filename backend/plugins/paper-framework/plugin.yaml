@@ -1,0 +1,27 @@
+name: paper-framework
+version: 1.0.0
+description: 论文框架图草图生成 — 支持手绘风格，自动生成论文结构/方法流程/实验架构图
+author: AcaSight Team
+license: MIT
+
+hooks:
+  - post_write
+  - pre_chart
+
+provides:
+  - generate_framework_diagram
+  - generate_method_flowchart
+  - generate_experiment_architecture
+
+depends: []
+
+permissions:
+  - network
+
+entry_point: plugin.py
+
+tags:
+  - figure
+  - framework
+  - diagram
+  - hand-drawn

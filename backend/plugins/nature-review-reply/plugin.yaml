@@ -1,0 +1,19 @@
+name: nature-review-reply
+version: 1.0.0
+description: Nature审稿回复 — 生成结构化审稿回复，逐条回应审稿人意见
+author: AcaSight Team
+license: MIT
+hooks:
+  - post_write
+provides:
+  - generate_review_reply
+  - structure_point_by_point
+  - suggest_revisions
+depends: []
+permissions:
+  - network
+entry_point: plugin.py
+tags:
+  - nature
+  - review
+  - reply

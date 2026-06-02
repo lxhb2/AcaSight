@@ -1,0 +1,92 @@
+# AcaSight RAGFlow Docker Compose
+# Usage: docker compose -f docker-compose.ragflow.yml up -d
+# Docs: docs/G1_ragflow_deployment.md
+
+version: "3.8"
+
+services:
+  ragflow:
+    image: infiniflow/ragflow:v0.25.5
+    container_name: acasight-ragflow
+    ports:
+      - "9380:9380"
+      - "80:80"
+    volumes:
+      - ragflow-data:/ragflow
+    environment:
+      - MYSQL_PASSWORD=acasight_ragflow_2026
+      - MINIO_USER=acasight
+      - MINIO_PASSWORD=acasight_minio_2026
+      - REDIS_PASSWORD=acasight_redis_2026
+    depends_on:
+      - elasticsearch
+      - mysql
+      - minio
+      - redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: acasight-es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  mysql:
+    image: mysql:8.0
+    container_name: acasight-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=acasight_ragflow_2026
+      - MYSQL_DATABASE=ragflow
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: acasight-minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=acasight
+      - MINIO_ROOT_PASSWORD=acasight_minio_2026
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: acasight-redis
+    command: redis-server --requirepass acasight_redis_2026
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  ragflow-data:
+  es-data:
+  mysql-data:
+  minio-data:
+  redis-data:

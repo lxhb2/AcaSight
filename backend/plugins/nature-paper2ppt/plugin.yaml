@@ -1,0 +1,20 @@
+name: nature-paper2ppt
+version: 1.0.0
+description: Nature论文转PPT — 将Nature论文转换为学术报告PPT，保留关键图表和数据
+author: AcaSight Team
+license: MIT
+hooks:
+  - post_write
+provides:
+  - convert_paper_to_ppt
+  - extract_key_slides
+  - generate_slide_notes
+depends: []
+permissions:
+  - network
+  - fs_write
+entry_point: plugin.py
+tags:
+  - nature
+  - ppt
+  - presentation

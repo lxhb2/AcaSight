@@ -1,0 +1,19 @@
+name: nature-citation-check
+version: 1.0.0
+description: Nature引用检查 — 检查引用格式、完整性、自引比例，确保符合Nature引用规范
+author: AcaSight Team
+license: MIT
+hooks:
+  - post_write
+provides:
+  - check_citation_format
+  - check_citation_completeness
+  - check_self_citation_ratio
+depends: []
+permissions:
+  - network
+entry_point: plugin.py
+tags:
+  - nature
+  - citation
+  - reference

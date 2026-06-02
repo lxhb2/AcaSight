@@ -1,0 +1,21 @@
+name: nature-writing
+version: 1.0.0
+description: 自然科学论文写作 — 遵循Nature写作规范，生成结构化科学论文
+author: AcaSight Team
+license: MIT
+hooks:
+  - pre_write
+  - post_write
+provides:
+  - write_nature_abstract
+  - write_nature_introduction
+  - write_nature_methods
+  - write_nature_results
+depends: []
+permissions:
+  - network
+entry_point: plugin.py
+tags:
+  - nature
+  - writing
+  - scientific-paper

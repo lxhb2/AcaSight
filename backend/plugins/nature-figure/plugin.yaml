@@ -1,0 +1,27 @@
+name: nature-figure
+version: 1.0.0
+description: Nature标准实验结果图 — 绘制符合Nature期刊标准的实验结果图，支持Python和R代码生成
+author: AcaSight Team
+license: MIT
+
+hooks:
+  - pre_chart
+  - post_chart
+
+provides:
+  - generate_nature_figure
+  - validate_figure_standards
+  - generate_plot_code
+
+depends: []
+
+permissions:
+  - network
+
+entry_point: plugin.py
+
+tags:
+  - nature
+  - figure
+  - scientific-plot
+  - publication

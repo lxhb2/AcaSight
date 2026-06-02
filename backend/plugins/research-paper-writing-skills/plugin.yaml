@@ -1,0 +1,19 @@
+name: research-paper-writing-skills
+version: 1.0.0
+description: 计算机类论文逻辑检查 — 检查论文的逻辑链条、结论支撑、实验设计完整性
+author: AcaSight Team
+license: MIT
+hooks:
+  - post_write
+provides:
+  - check_paper_logic
+  - check_conclusion_support
+  - check_experiment_design
+depends: []
+permissions:
+  - network
+entry_point: plugin.py
+tags:
+  - writing
+  - logic-check
+  - computer-science
