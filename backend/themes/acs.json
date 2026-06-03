@@ -1,0 +1,15 @@
+{
+  "id": "acs",
+  "name": "ACS",
+  "layout": {
+    "font": {"family": "Arial", "size": 8, "color": "#000"},
+    "paper_bgcolor": "#fff",
+    "plot_bgcolor": "#fff",
+    "xaxis": {"linewidth": 1, "showline": true, "linecolor": "#000", "tickwidth": 1, "showgrid": false, "mirror": "ticks"},
+    "yaxis": {"linewidth": 1, "showline": true, "linecolor": "#000", "tickwidth": 1, "showgrid": false, "mirror": "ticks"},
+    "margin": {"l": 55, "r": 20, "t": 25, "b": 50}
+  },
+  "width_mm": 82.5,
+  "dpi": 300,
+  "colors": ["#000000", "#D62728", "#1F77B4", "#2CA02C", "#FF7F0E"]
+}

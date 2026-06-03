@@ -510,6 +510,14 @@ try:
 except Exception as e:
     logger.warning(f"Brainstorm router load failed: {e}")
 
+# Plot 绘图路由
+try:
+    from app.routers import plot
+    app.include_router(plot.router, prefix="/api")
+    logger.info("Plot router loaded")
+except Exception as e:
+    logger.warning(f"Plot router load failed: {e}")
+
 # ── 前端静态文件 ──
 from pathlib import Path
 frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"

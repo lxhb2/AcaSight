@@ -243,6 +243,12 @@ class AgentOrchestrator:
             return await self._handle_search_task(task, context)
         elif intent == "chart":
             return await self._handle_chart_task(task, context)
+        elif intent == "plot_xrd":
+            return await self._handle_plot_xrd_task(task, context)
+        elif intent == "plot_rsm":
+            return await self._handle_plot_rsm_task(task, context)
+        elif intent == "plot_spectrum":
+            return await self._handle_plot_spectrum_task(task, context)
         elif intent == "analyze":
             return await self._handle_analyze_task(task, context)
         elif intent == "cite":
@@ -253,7 +259,13 @@ class AgentOrchestrator:
     def _classify_intent(self, task: str) -> str:
         """简单的意图分类"""
         task_lower = task.lower()
-        if any(k in task_lower for k in ["写", "生成", "撰写", "draft", "write", "generate"]):
+        if any(k in task_lower for k in ["xrd", "衍射", "pdf卡片", "物相分析"]):
+            return "plot_xrd"
+        elif any(k in task_lower for k in ["响应面", "rsm", "曲面图", "等高线", "响应曲面", "优化"]):
+            return "plot_rsm"
+        elif any(k in task_lower for k in ["拉曼", "raman", "xps", "ftir", "光谱拟合", "多峰拟合", "峰拟合", "peak fit"]):
+            return "plot_spectrum"
+        elif any(k in task_lower for k in ["写", "生成", "撰写", "draft", "write", "generate"]):
             return "write"
         elif any(k in task_lower for k in ["搜索", "检索", "找", "search", "find", "query"]):
             return "search"
@@ -326,6 +338,59 @@ class AgentOrchestrator:
                 "success": True,
                 "result": result,
                 "tools_used": ["auto_generate_chart"],
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _handle_plot_xrd_task(self, task: str, context: Dict) -> Dict:
+        """处理 XRD 堆叠绘图任务"""
+        try:
+            result = await self.registry.call("plot_xrd_stack", {
+                "xrd_datasets": context.get("xrd_datasets", "[]"),
+                "pdf_cards": context.get("pdf_cards", "[]"),
+                "config": context.get("config", "{}"),
+            })
+            return {
+                "success": True,
+                "result": result,
+                "tools_used": ["plot_xrd_stack"],
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _handle_plot_rsm_task(self, task: str, context: Dict) -> Dict:
+        """处理 RSM 响应面绘图任务"""
+        try:
+            result = await self.registry.call("plot_rsm_surface", {
+                "x_data": context.get("x_data", "[]"),
+                "y_data": context.get("y_data", "[]"),
+                "z_data": context.get("z_data", "[]"),
+                "plot_type": context.get("plot_type", "surface"),
+                "config": context.get("config", "{}"),
+            })
+            return {
+                "success": True,
+                "result": result,
+                "tools_used": ["plot_rsm_surface"],
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _handle_plot_spectrum_task(self, task: str, context: Dict) -> Dict:
+        """处理光谱拟合绘图任务"""
+        try:
+            result = await self.registry.call("plot_spectrum_fit", {
+                "x_data": context.get("x_data", "[]"),
+                "y_data": context.get("y_data", "[]"),
+                "peak_positions": context.get("peak_positions", "[]"),
+                "peak_type": context.get("peak_type", "pvoigt"),
+                "baseline_method": context.get("baseline_method", "als"),
+                "config": context.get("config", "{}"),
+            })
+            return {
+                "success": True,
+                "result": result,
+                "tools_used": ["plot_spectrum_fit"],
             }
         except Exception as e:
             return {"success": False, "error": str(e)}

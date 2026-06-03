@@ -5,8 +5,11 @@ import '@excalidraw/excalidraw/index.css';
 import {
   Loader2, X, Sparkles,
   CheckSquare, Square, Lightbulb, BookOpen,
+  ImageIcon,
 } from 'lucide-react';
 import { papersApi } from '@/services/api';
+import { plotApi } from '@/services/plotService';
+import { usePlotStore } from '@/store/plotStore';
 import type { PaperItem } from '@/services/api';
 
 interface ExcalidrawBoardProps {
@@ -186,6 +189,35 @@ export const ExcalidrawBoard: React.FC<ExcalidrawBoardProps> = ({
       if (mountedRef.current) setGenerating(false);
     }
   }, [selectedIds, focus]);
+
+  const handleImportChart = useCallback(async () => {
+    if (!excalidrawAPI) return;
+    const schema = usePlotStore.getState().plotSchema;
+    if (!schema) {
+      alert('请先生成图表');
+      return;
+    }
+    try {
+      const result = await plotApi.exportPlot(schema, 'svg', 800, 500, 2);
+      const imageUrl = result.image_url;
+      excalidrawAPI.updateScene({
+        elements: [
+          ...excalidrawAPI.getSceneElements(),
+          ...convertToExcalidrawElements([{
+            type: 'image',
+            x: 100 + Math.random() * 200,
+            y: 100 + Math.random() * 200,
+            width: 800,
+            height: 500,
+            fileId: imageUrl as any,
+            status: 'saved',
+          }]),
+        ],
+      });
+    } catch (err) {
+      console.error('Chart import failed:', err);
+    }
+  }, [excalidrawAPI]);
 
   const handleRenderBrainstormToCanvas = useCallback(() => {
     if (!excalidrawAPI || !brainstormContent) return;
@@ -410,6 +442,16 @@ export const ExcalidrawBoard: React.FC<ExcalidrawBoardProps> = ({
               {brainstormContent}
             </div>
           )}
+
+          {/* Chart import button */}
+          <div style={{ padding: '4px 10px', borderTop: '1px solid var(--border-color)' }}>
+            <button
+              onClick={handleImportChart}
+              style={{ width: '100%', padding: '6px 0', borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 4 }}
+            >
+              <ImageIcon size={12} /> 导入图表到白板
+            </button>
+          </div>
         </div>
       )}
 

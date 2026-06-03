@@ -1,4 +1,4 @@
-﻿"""
+"""
 六大模块工具注册表
 每个模块注册其工具到全局 ToolRegistry，供 Agent 调度
 
@@ -6,6 +6,7 @@
   literature: search, decompose, query_dimension, get_field, export_citation
   writing:    generate_outline, generate_section, polish_text, export_word
   charts:     auto_generate_chart, list_templates, parse_data
+  plot:       plot_xrd_stack, plot_rsm_surface, plot_spectrum_fit
   agent:      chat, summarize, translate, analyze
   knowledge:  query_graph, extract_concepts, trend_analysis
   notes:      save_note, export_markdown, format_convert
@@ -330,6 +331,242 @@ def _chart_list_templates():
             {"id": "heatmap", "name": "热力图", "description": "矩阵数据"},
             {"id": "sem-image", "name": "SEM/TEM 标注", "description": "电镜图叠加"},
         ]
+    }
+
+
+# ═══════════════════════════════════════════════
+# AI 绘图模块工具 (plot)
+# ═══════════════════════════════════════════════
+
+@tool(
+    name="plot_xrd_stack",
+    module="plot",
+    description="生成 XRD 堆叠图谱，支持多组 XRD 曲线叠加偏移显示，并可在下方子图叠加 PDF 卡片棒状图。适用于粉末衍射物相分析、多样品 XRD 对比。",
+    parameters={
+        "type": "object",
+        "properties": {
+            "xrd_datasets": {
+                "type": "string",
+                "description": "JSON 数组，每项含 two_theta(2θ角度数组)、intensity(强度数组)、label(样品名)、color(颜色，可选)。例: [{\"two_theta\":[10,20,30],\"intensity\":[100,200,150],\"label\":\"Sample A\"}]",
+            },
+            "pdf_cards": {
+                "type": "string",
+                "description": "JSON 数组，每项含 two_theta(衍射峰位置数组)、intensity(相对强度数组)、card_id(卡片号)、color(颜色，可选)、hkl(晶面指数数组，可选)。例: [{\"two_theta\":[28.3,40.5],\"intensity\":[100,60],\"card_id\":\"PDF#00-044-1436\"}]",
+                "default": "[]",
+            },
+            "config": {
+                "type": "string",
+                "description": "JSON 配置项: y_offset(曲线偏移量，默认1.2)、two_theta_range([min,max])、line_width(线宽)、show_hkl(是否显示hkl标注)、stick_width(棒状图线宽)、show_y_ticks(是否显示Y轴刻度)。例: {\"y_offset\":1.2,\"two_theta_range\":[10,80],\"show_hkl\":true}",
+                "default": "{}",
+            },
+        },
+        "required": ["xrd_datasets"],
+    }
+)
+async def _plot_xrd_stack(xrd_datasets: str, pdf_cards: str = "[]", config: str = "{}"):
+    import json as _json
+    import numpy as np
+    from app.services.plot.xrd_plot import generate_xrd_stacked_schema
+
+    try:
+        datasets = _json.loads(xrd_datasets) if isinstance(xrd_datasets, str) else xrd_datasets
+    except _json.JSONDecodeError:
+        return {"error": "xrd_datasets JSON 解析失败", "success": False}
+
+    try:
+        cards = _json.loads(pdf_cards) if isinstance(pdf_cards, str) else pdf_cards
+    except _json.JSONDecodeError:
+        cards = []
+
+    try:
+        cfg = _json.loads(config) if isinstance(config, str) else config
+    except _json.JSONDecodeError:
+        cfg = {}
+
+    schema = generate_xrd_stacked_schema(
+        xrd_datasets=datasets,
+        pdf_cards=cards,
+        config=cfg,
+    )
+    return {"success": True, "schema": schema, "chart_type": "xrd_stacked"}
+
+
+@tool(
+    name="plot_rsm_surface",
+    module="plot",
+    description="生成 RSM 响应面 3D 曲面图或 2D 等高线图。支持实验数据网格插值、二次多项式拟合、最优点标注。适用于响应面法(RSM)实验设计与优化。",
+    parameters={
+        "type": "object",
+        "properties": {
+            "x_data": {
+                "type": "string",
+                "description": "JSON 数组，因子A的实验值。例: [1,1,2,2,3,3]",
+            },
+            "y_data": {
+                "type": "string",
+                "description": "JSON 数组，因子B的实验值。例: [10,20,10,20,10,20]",
+            },
+            "z_data": {
+                "type": "string",
+                "description": "JSON 数组，响应值。例: [85,90,92,88,78,82]",
+            },
+            "plot_type": {
+                "type": "string",
+                "description": "图表类型: surface(3D曲面图) 或 contour(2D等高线图)",
+                "default": "surface",
+            },
+            "config": {
+                "type": "string",
+                "description": "JSON 配置项: grid_resolution(网格分辨率，默认50)、interpolation(插值方法: cubic/linear/nearest)、colorscale(色标: Viridis/Plasma等)、show_data_points(是否显示实验点)、mark_optimum(是否标注最优点)、fit_quadratic(是否二次拟合)、x_label/y_label/z_label(轴标签)。例: {\"colorscale\":\"Plasma\",\"fit_quadratic\":true,\"x_label\":\"Temperature\",\"y_label\":\"pH\",\"z_label\":\"Yield\"}",
+                "default": "{}",
+            },
+        },
+        "required": ["x_data", "y_data", "z_data"],
+    }
+)
+async def _plot_rsm_surface(x_data: str, y_data: str, z_data: str, plot_type: str = "surface", config: str = "{}"):
+    import json as _json
+    from app.services.plot.rsm_plot import generate_rsm_surface_schema, generate_contour_schema, fit_response_model
+
+    try:
+        x = _json.loads(x_data) if isinstance(x_data, str) else x_data
+        y = _json.loads(y_data) if isinstance(y_data, str) else y_data
+        z = _json.loads(z_data) if isinstance(z_data, str) else z_data
+    except _json.JSONDecodeError:
+        return {"error": "数据 JSON 解析失败", "success": False}
+
+    try:
+        cfg = _json.loads(config) if isinstance(config, str) else config
+    except _json.JSONDecodeError:
+        cfg = {}
+
+    if len(x) != len(y) or len(y) != len(z):
+        return {"error": "x_data, y_data, z_data 长度不一致", "success": False}
+
+    if plot_type == "contour":
+        schema = generate_contour_schema(x, y, z, cfg)
+    else:
+        schema = generate_rsm_surface_schema(x, y, z, cfg)
+
+    # 附加拟合模型信息
+    model_info = None
+    if cfg.get("fit_quadratic", False):
+        try:
+            model_info = fit_response_model(x, y, z, degree=2)
+        except Exception:
+            model_info = None
+
+    return {
+        "success": True,
+        "schema": schema,
+        "chart_type": f"rsm_{plot_type}",
+        "model": model_info,
+    }
+
+
+@tool(
+    name="plot_spectrum_fit",
+    module="plot",
+    description="对光谱数据(Raman/XPS/FTIR)进行多峰拟合。支持基线校正、平滑、自动寻峰、Gaussian/Lorentzian/Pseudo-Voigt 拟合，并生成含拟合曲线和残差图的 PlotSchema。",
+    parameters={
+        "type": "object",
+        "properties": {
+            "x_data": {
+                "type": "string",
+                "description": "JSON 数组，X轴数据(如拉曼位移cm⁻¹、结合能eV、波数cm⁻¹)。例: [100,101,102,...,3500]",
+            },
+            "y_data": {
+                "type": "string",
+                "description": "JSON 数组，Y轴强度数据。例: [50,52,48,...,30]",
+            },
+            "peak_positions": {
+                "type": "string",
+                "description": "JSON 数组，初始峰位置猜测值。例: [1350,1580,2700] 对应 D/G/2D 峰",
+            },
+            "peak_type": {
+                "type": "string",
+                "description": "峰函数类型: gaussian / lorentzian / pvoigt(Pseudo-Voigt，默认)",
+                "default": "pvoigt",
+            },
+            "baseline_method": {
+                "type": "string",
+                "description": "基线校正方法: als(非对称最小二乘) / snip / poly(多项式) / shirley(XPS专用) / none(不校正)",
+                "default": "als",
+            },
+            "config": {
+                "type": "string",
+                "description": "JSON 配置项: x_label(X轴标签)、y_label(Y轴标签)、show_residual(是否显示残差图)、peak_colors(峰颜色数组)、smooth_method(savgol/moving_avg)、smooth_params(平滑参数)。例: {\"x_label\":\"Raman Shift (cm⁻¹)\",\"baseline_method\":\"als\",\"show_residual\":true}",
+                "default": "{}",
+            },
+        },
+        "required": ["x_data", "y_data", "peak_positions"],
+    }
+)
+async def _plot_spectrum_fit(
+    x_data: str, y_data: str, peak_positions: str,
+    peak_type: str = "pvoigt", baseline_method: str = "als", config: str = "{}",
+):
+    import json as _json
+    import numpy as np
+    from app.services.plot.spectrum_engine import (
+        correct_baseline, smooth_data, detect_peaks, fit_peaks,
+        generate_spectrum_fit_schema,
+    )
+
+    try:
+        x = np.array(_json.loads(x_data) if isinstance(x_data, str) else x_data, dtype=float)
+        y = np.array(_json.loads(y_data) if isinstance(y_data, str) else y_data, dtype=float)
+        positions = _json.loads(peak_positions) if isinstance(peak_positions, str) else peak_positions
+    except _json.JSONDecodeError:
+        return {"error": "数据 JSON 解析失败", "success": False}
+
+    try:
+        cfg = _json.loads(config) if isinstance(config, str) else config
+    except _json.JSONDecodeError:
+        cfg = {}
+
+    if len(x) != len(y):
+        return {"error": "x_data 和 y_data 长度不一致", "success": False}
+
+    # 基线校正
+    baseline_result = None
+    if baseline_method != "none":
+        try:
+            baseline_result = correct_baseline(x, y, method=baseline_method, params=cfg.get("baseline_params"))
+            y_corrected = np.array(baseline_result["y_corrected"])
+        except Exception:
+            y_corrected = y
+    else:
+        y_corrected = y
+
+    # 平滑（可选）
+    if cfg.get("smooth_method"):
+        try:
+            smooth_result = smooth_data(y_corrected, method=cfg["smooth_method"], params=cfg.get("smooth_params"))
+            y_corrected = np.array(smooth_result["y_smoothed"])
+        except Exception:
+            pass
+
+    # 多峰拟合
+    fit_result = fit_peaks(x, y_corrected, positions, peak_type=peak_type)
+
+    if not fit_result.get("success", False):
+        return {"error": fit_result.get("error", "拟合失败"), "success": False}
+
+    # 生成 PlotSchema
+    schema = generate_spectrum_fit_schema(x, y_corrected, fit_result, cfg)
+
+    return {
+        "success": True,
+        "schema": schema,
+        "chart_type": "spectrum_fit",
+        "fit_result": {
+            "r_squared": fit_result["r_squared"],
+            "n_peaks": fit_result["n_peaks"],
+            "fitted_peaks": fit_result["fitted_peaks"],
+            "peak_type": fit_result["peak_type"],
+        },
+        "baseline": baseline_result,
     }
 
 

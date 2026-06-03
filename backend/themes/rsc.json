@@ -1,0 +1,15 @@
+{
+  "id": "rsc",
+  "name": "RSC",
+  "layout": {
+    "font": {"family": "Helvetica", "size": 8, "color": "#000"},
+    "paper_bgcolor": "#fff",
+    "plot_bgcolor": "#fff",
+    "xaxis": {"linewidth": 1, "showline": true, "linecolor": "#000", "tickwidth": 1, "showgrid": false, "mirror": "ticks"},
+    "yaxis": {"linewidth": 1, "showline": true, "linecolor": "#000", "tickwidth": 1, "showgrid": false, "mirror": "ticks"},
+    "margin": {"l": 50, "r": 15, "t": 20, "b": 45}
+  },
+  "width_mm": 80,
+  "dpi": 300,
+  "colors": ["#0C5DA5", "#00B945", "#FF9500", "#FF2C00", "#845B97"]
+}

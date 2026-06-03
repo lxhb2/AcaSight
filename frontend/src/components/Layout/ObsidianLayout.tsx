@@ -12,7 +12,7 @@ import {
   TrendingUp, GraduationCap, HardDrive,
   Image, Shapes, Puzzle, Activity, History, BookOpen,
   Database, FileText, LayoutGrid, Brain, Globe, Table2,
-  Lightbulb,
+  Lightbulb, FlaskConical, Box, Waves, BarChart3,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useApp } from '@/contexts/AppContext';
@@ -45,6 +45,10 @@ const LiteratureTableView = lazy(() => import('@/components/LiteratureTable/Lite
 const LiteratureReviewView = lazy(() => import('@/components/LiteratureReview/LiteratureReviewView').then(m => ({ default: m.LiteratureReviewView })));
 const DimensionDisplayView = lazy(() => import('@/components/DimensionDisplay/DimensionDisplayView').then(m => ({ default: m.DimensionDisplayView })));
 const PaperWritingWorkbench = lazy(() => import('@/components/WritingWorkbench/PaperWritingWorkbench').then(m => ({ default: m.PaperWritingWorkbench })));
+const XRDStackedChart = lazy(() => import('@/components/Charts/Materials/XRD/XRDStackedChart').then(m => ({ default: m.XRDStackedChart })));
+const ResponseSurface3D = lazy(() => import('@/components/Charts/DOE/ResponseSurface3D').then(m => ({ default: m.ResponseSurface3D })));
+const SpectrumProcessor = lazy(() => import('@/components/Charts/Common/SpectrumProcessor').then(m => ({ default: m.SpectrumProcessor })));
+const StatisticsPanel = lazy(() => import('@/components/Charts/Statistics/StatisticsPanel').then(m => ({ default: m.StatisticsPanel })));
 
 import {
   FileExplorerView,
@@ -125,6 +129,10 @@ const FEATURE_ITEMS: FeatureItem[] = [
   { id: 'writing-workbench', icon: Brain,   labelKey: 'layout.panelWritingWorkbench', color: '#8b5cf6', group: 'academic' },
   { id: 'whiteboard',    icon: Lightbulb,   labelKey: 'layout.panelWhiteboard',   color: '#f59e0b', group: 'academic' },
   { id: 'dblp',          icon: Globe,        labelKey: 'layout.panelDBLP',          color: '#8EA8C3', group: 'academic' },
+  { id: 'xrd-plot',      icon: FlaskConical, labelKey: 'layout.panelXRDPlot',       color: '#059669', group: 'academic' },
+  { id: 'rsm-3d',        icon: Box,          labelKey: 'layout.panelRSM3D',         color: '#7c3aed', group: 'academic' },
+  { id: 'spectrum',      icon: Waves,        labelKey: 'layout.panelSpectrum',      color: '#0891b2', group: 'academic' },
+  { id: 'statistics',    icon: BarChart3,    labelKey: 'layout.panelStatistics',    color: '#dc2626', group: 'academic' },
   { id: 'notes',         icon: PenTool,      labelKey: 'layout.panelNotes',        color: '#9DB4AB', group: 'academic' },
   { id: 'material',      icon: HardDrive,    labelKey: 'layout.panelMaterials',    color: '#B5A68E', group: 'academic' },
   // ── 可视化 & 绘图 ──
@@ -260,7 +268,7 @@ export const ObsidianLayout: React.FC = () => {
 
   const handleFeatureClick = useCallback((itemId: string) => {
     setSidebarExpanded(false);
-    if (itemId === 'dimension-display' || itemId === 'dblp' || itemId === 'writing-workbench') {
+    if (itemId === 'dimension-display' || itemId === 'dblp' || itemId === 'writing-workbench' || itemId === 'xrd-plot' || itemId === 'rsm-3d' || itemId === 'spectrum' || itemId === 'statistics') {
       setOverlayPanel(itemId);
     } else {
       enterWorkspace(itemId);
@@ -581,6 +589,10 @@ export const ObsidianLayout: React.FC = () => {
                       'paper-dimensions': { icon: <Brain size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelPaperDimensions' },
                       'literature-table': { icon: <Table2 size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelLiteratureTable' },
                       'literature-review': { icon: <BookOpen size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelLiteratureReview' },
+                      'xrd-plot': { icon: <FlaskConical size={16} style={{ color: '#059669' }} />, titleKey: 'layout.panelXRDPlot' },
+                      'rsm-3d': { icon: <Box size={16} style={{ color: '#7c3aed' }} />, titleKey: 'layout.panelRSM3D' },
+                      'spectrum': { icon: <Waves size={16} style={{ color: '#0891b2' }} />, titleKey: 'layout.panelSpectrum' },
+                      'statistics': { icon: <BarChart3 size={16} style={{ color: '#dc2626' }} />, titleKey: 'layout.panelStatistics' },
                     };
                     const config = overlayPanelConfig[overlayPanel];
                     return config ? (
@@ -622,6 +634,18 @@ export const ObsidianLayout: React.FC = () => {
                 )}
                 {overlayPanel === 'literature-review' && (
                   <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><LiteratureReviewView /></Suspense></ErrorBoundary>
+                )}
+                {overlayPanel === 'xrd-plot' && (
+                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><XRDStackedChart /></Suspense></ErrorBoundary>
+                )}
+                {overlayPanel === 'rsm-3d' && (
+                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><ResponseSurface3D /></Suspense></ErrorBoundary>
+                )}
+                {overlayPanel === 'spectrum' && (
+                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><SpectrumProcessor /></Suspense></ErrorBoundary>
+                )}
+                {overlayPanel === 'statistics' && (
+                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><StatisticsPanel /></Suspense></ErrorBoundary>
                 )}
               </div>
             </div>
