@@ -82,19 +82,37 @@ class VectorService:
     # 文档索引
     # --------------------------------------------------
 
-    def index_paper(self, paper_id: int, text: str, metadata: Dict[str, Any] = None) -> bool:
+    def index_paper(self, paper_id: int, text: str, metadata: Dict[str, Any] = None,
+                    structured_chunks: List[Dict[str, Any]] = None) -> bool:
         if not self._ensure_client():
-            return False
-        if not text or len(text.strip()) < 50:
-            logger.warning("Text too short for indexing", paper_id=paper_id)
             return False
 
         self._delete_existing_chunks(paper_id)
 
-        chunks = self._chunk_text(text, max_chars=CHUNK_MAX_CHARS, overlap=CHUNK_OVERLAP)
-
-        try:
-            ids = [f"p{paper_id}_c{i}" for i in range(len(chunks))]
+        # 优先使用结构化分块（来自 OpenDataLoader）
+        if structured_chunks:
+            chunks = [c["text"] for c in structured_chunks if c.get("text", "").strip()]
+            metas = []
+            for i, c in enumerate(structured_chunks):
+                if not c.get("text", "").strip():
+                    continue
+                m = dict(metadata or {})
+                m["paper_id"] = paper_id
+                m["chunk_index"] = i
+                m["indexed_at"] = int(time.time())
+                # 保留结构化元数据
+                cm = c.get("metadata", {})
+                if cm.get("type"):
+                    m["element_type"] = cm["type"]
+                if cm.get("page") is not None:
+                    m["page"] = cm["page"]
+                if cm.get("heading"):
+                    m["heading"] = cm["heading"]
+                if cm.get("pages"):
+                    m["pages"] = ",".join(str(p) for p in cm["pages"])
+                metas.append(m)
+        elif text and len(text.strip()) >= 50:
+            chunks = self._chunk_text(text, max_chars=CHUNK_MAX_CHARS, overlap=CHUNK_OVERLAP)
             metas = []
             for i in range(len(chunks)):
                 m = dict(metadata or {})
@@ -102,6 +120,12 @@ class VectorService:
                 m["chunk_index"] = i
                 m["indexed_at"] = int(time.time())
                 metas.append(m)
+        else:
+            logger.warning("No text or chunks for indexing", paper_id=paper_id)
+            return False
+
+        try:
+            ids = [f"p{paper_id}_c{i}" for i in range(len(chunks))]
 
             self._collection.upsert(
                 ids=ids,

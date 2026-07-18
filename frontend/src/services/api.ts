@@ -3,6 +3,171 @@
  * 与后端 FastAPI (http://localhost:8000/api) 通信
  */
 
+// ==================== Translate API ====================
+export interface TranslateRequest {
+  text: string;
+  source_lang?: string;
+  target_lang?: string;
+}
+
+export interface TranslateResponse {
+  translation: string;
+  from_lang: string;
+  to_lang: string;
+  engine: string;
+  chunks?: number;
+  error?: string | null;
+}
+
+export const translateApi = {
+  /** 翻译文本 */
+  text: (req: TranslateRequest) =>
+    request<{ status: string; data: TranslateResponse }>('/translate/text', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+
+  /** 长文本翻译 */
+  long: (req: TranslateRequest) =>
+    request<{ status: string; data: TranslateResponse }>('/translate/long', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+
+  /** 流式翻译 (SSE) */
+  translateStream: async function* (req: TranslateRequest): AsyncGenerator<string> {
+    const res = await fetch(`${BASE_URL}/translate/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      const msg = typeof err.detail === 'string' ? err.detail : JSON.stringify(err);
+      throw new Error(msg || `HTTP ${res.status}`);
+    }
+    const reader = res.body?.getReader();
+    if (!reader) return;
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'chunk' || event.type === 'complete') {
+              yield event.text;
+            }
+            if (event.type === 'error') {
+              throw new Error(event.error || 'Stream translation failed');
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) continue;
+            throw e;
+          }
+        }
+      }
+    }
+  },
+
+  /** 获取翻译引擎状态 */
+  status: () =>
+    request<{ status: string; data: { engines: Record<string, boolean>; cache: Record<string, unknown>; chain: string[] } }>('/translate/status'),
+
+  /** 获取支持的语言 */
+  languages: () =>
+    request<{ status: string; data: { engine: string; supported_pairs: string[]; languages: Record<string, string> } }>('/translate/languages'),
+
+  /** 快速翻译 — Opus-MT + AI 自动降级 */
+  quick: (req: TranslateRequest) =>
+    request<{ status: string; data: TranslateResponse }>('/translate/quick', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+};
+
+// ==================== BabelDOC PDF Translation API ====================
+export interface BabelDOCTranslateRequest {
+  pdf_path: string;
+  lang_in?: string;
+  lang_out?: string;
+  no_dual?: boolean;
+  no_mono?: boolean;
+  use_alternating_pages_dual?: boolean;
+  dual_translate_first?: boolean;
+  pages?: string;
+  openai_base_url?: string;
+  openai_api_key?: string;
+  openai_model?: string;
+  custom_system_prompt?: string;
+}
+
+export interface BabelDOCTaskStatus {
+  task_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  progress: number;
+  stage: string;
+  created_at: number;
+  completed_at: number | null;
+  error: string | null;
+  result: {
+    original_pdf: string;
+    lang_in: string;
+    lang_out: string;
+    mono_pdf: string | null;
+    dual_pdf: string | null;
+    total_seconds?: number;
+    total_valid_chars?: number;
+  } | null;
+}
+
+export const babeldocApi = {
+  /** 检查 BabelDOC 可用性 */
+  status: () =>
+    request<{ status: string; data: { available: boolean; active_tasks: number; total_tasks: number } }>('/translate/babeldoc/status'),
+
+  /** 启动 PDF 翻译任务 */
+  translate: (req: BabelDOCTranslateRequest) =>
+    request<{ status: string; data: { task_id: string } }>('/translate/babeldoc/translate', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+
+  /** 获取任务状态 */
+  taskStatus: (taskId: string) =>
+    request<{ status: string; data: BabelDOCTaskStatus }>(`/translate/babeldoc/task/${taskId}`),
+
+  /** 列出所有任务 */
+  listTasks: () =>
+    request<{ status: string; data: BabelDOCTaskStatus[] }>('/translate/babeldoc/tasks'),
+
+  /** 取消任务 */
+  cancelTask: (taskId: string) =>
+    request<{ status: string; message: string }>(`/translate/babeldoc/cancel/${taskId}`, {
+      method: 'POST',
+    }),
+
+  /** 获取翻译结果 PDF URL */
+  getResultUrl: (taskId: string, pdfType: 'mono' | 'dual') =>
+    `/api/translate/babeldoc/result/${taskId}/${pdfType}`,
+
+  /** 删除任务 */
+  deleteTask: (taskId: string) =>
+    request<{ status: string; message: string }>(`/translate/babeldoc/task/${taskId}`, {
+      method: 'DELETE',
+    }),
+};
+
+/**
+ * AcaSight API 客户端
+ * 与后端 FastAPI (http://localhost:8000/api) 通信
+ */
+
 const BASE_URL = '/api';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -2218,6 +2383,7 @@ export const dblpApi = {
       body: JSON.stringify({ papers }),
     }),
 };
+
 
 // ==================== Citations API ====================
 export const citationsApi = {

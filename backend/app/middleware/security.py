@@ -118,11 +118,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         bypass_secret = os.environ.get("RATE_LIMIT_BYPASS_SECRET", "")
         bypass_header = request.headers.get("X-RateLimit-Bypass", "")
-        is_debug = os.environ.get("DEBUG", "false").lower() == "true"
         if bypass_secret and bypass_header == bypass_secret:
-            response = await call_next(request)
-            return response
-        if is_debug and bypass_header == "acasight-test-bypass":
             response = await call_next(request)
             return response
 

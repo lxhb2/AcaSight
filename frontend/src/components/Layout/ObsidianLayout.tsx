@@ -11,20 +11,25 @@ import {
   PenTool, Pencil, Menu,
   TrendingUp, GraduationCap, HardDrive,
   Image, Shapes, Puzzle, Activity, History, BookOpen,
-  Database, FileText, LayoutGrid, Brain, Globe, Table2,
-  Lightbulb, FlaskConical, Box, Waves, BarChart3,
+  Database, LayoutGrid, Brain, Globe, Table2,
+  Lightbulb, FlaskConical, HelpCircle, FileEdit,
+  FileSearch, Sigma, Microscope, Network,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useApp } from '@/contexts/AppContext';
 import { usePanels } from '@/contexts/AppContext';
+import { usePanelSwitchStore } from '@/store/panelSwitchStore';
 import { FileOpenProvider } from '@/contexts/FileOpenContext';
 import { SettingsModal } from '@/components/Settings/SettingsModal';
 import { MarkdownEditor } from '@/components/Notes/MarkdownEditor';
 import { AgentPanel } from '@/components/Agent/AgentPanel';
 import { ContextualAgentBar } from '@/components/Agent/ContextualAgentBar';
+import { FloatingTranslate } from '@/components/Translate/FloatingTranslate';
+import { FullPageTranslate } from '@/components/Translate/FullPageTranslate';
 import { ZoteroPanel } from '@/components/Zotero/ZoteroPanel';
 import { MaterialPanel } from '@/components/Views/MaterialPanel';
 import { ErrorBoundary } from '@/components/Common/ErrorBoundary';
+import { TauriDragDrop } from '@/components/Common/TauriDragDrop';
 
 const SearchPage = lazy(() => import('@/components/Search/SearchPage').then(m => ({ default: m.SearchPage })));
 const ChartPanel = lazy(() => import('@/components/Charts/ChartPanel').then(m => ({ default: m.ChartPanel })));
@@ -45,10 +50,14 @@ const LiteratureTableView = lazy(() => import('@/components/LiteratureTable/Lite
 const LiteratureReviewView = lazy(() => import('@/components/LiteratureReview/LiteratureReviewView').then(m => ({ default: m.LiteratureReviewView })));
 const DimensionDisplayView = lazy(() => import('@/components/DimensionDisplay/DimensionDisplayView').then(m => ({ default: m.DimensionDisplayView })));
 const PaperWritingWorkbench = lazy(() => import('@/components/WritingWorkbench/PaperWritingWorkbench').then(m => ({ default: m.PaperWritingWorkbench })));
-const XRDStackedChart = lazy(() => import('@/components/Charts/Materials/XRD/XRDStackedChart').then(m => ({ default: m.XRDStackedChart })));
-const ResponseSurface3D = lazy(() => import('@/components/Charts/DOE/ResponseSurface3D').then(m => ({ default: m.ResponseSurface3D })));
-const SpectrumProcessor = lazy(() => import('@/components/Charts/Common/SpectrumProcessor').then(m => ({ default: m.SpectrumProcessor })));
-const StatisticsPanel = lazy(() => import('@/components/Charts/Statistics/StatisticsPanel').then(m => ({ default: m.StatisticsPanel })));
+const PlotStudio = lazy(() => import('@/components/Charts/PlotStudio/PlotStudio').then(m => ({ default: m.PlotStudio })));
+const HelpCenter = lazy(() => import('@/components/Help/HelpCenter').then(m => ({ default: m.HelpCenter })));
+const DocumentList = lazy(() => import('@/components/Document/DocumentList').then(m => ({ default: m.DocumentList })));
+const BatchLiteraturePanel = lazy(() => import('@/components/Literature/BatchLiteraturePanel').then(m => ({ default: m.BatchLiteraturePanel })));
+const PlagiarismCheckPanel = lazy(() => import('@/components/Plagiarism/PlagiarismCheckPanel').then(m => ({ default: m.PlagiarismCheckPanel })));
+const LatexEditorPanel = lazy(() => import('@/components/Latex/LatexEditorPanel').then(m => ({ default: m.LatexEditorPanel })));
+const LabNotebookPanel = lazy(() => import('@/components/Experiment/LabNotebookPanel').then(m => ({ default: m.LabNotebookPanel })));
+const KnowledgeGraphPanel = lazy(() => import('@/components/KnowledgeGraph/KnowledgeGraphPanel').then(m => ({ default: m.KnowledgeGraphPanel })));
 
 import {
   FileExplorerView,
@@ -84,6 +93,98 @@ function PanelSkeleton() {
   );
 }
 
+const OVERLAY_CONFIG: Record<string, { icon: React.ReactNode; titleKey: string }> = {
+  'dimension-display': { icon: <Table2 size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelDimensionDisplay' },
+  'writing-workbench': { icon: <Brain size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelWritingWorkbench' },
+  'dblp': { icon: <Globe size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelDBLP' },
+  'paper-dimensions': { icon: <Brain size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelPaperDimensions' },
+  'literature-table': { icon: <Table2 size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelLiteratureTable' },
+  'literature-review': { icon: <BookOpen size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelLiteratureReview' },
+};
+
+const DashboardOverlay: React.FC<{ panel: string; onClose: () => void; t: (key: string) => string }> = ({ panel, onClose, t }) => {
+  const isFullScreen = panel === 'plot-studio' || panel === 'help-center';
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div
+        style={{
+          width: isFullScreen ? '96vw' : '90vw',
+          maxWidth: isFullScreen ? 1600 : 1100,
+          height: isFullScreen ? '92vh' : '80vh',
+          borderRadius: 12, background: 'var(--canvas)',
+          border: '1px solid var(--hairline)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {isFullScreen ? (
+          <ErrorBoundary><Suspense fallback={<PanelSkeleton />}>
+            {panel === 'plot-studio' && <PlotStudio onClose={onClose} />}
+            {panel === 'help-center' && <HelpCenter onClose={onClose} />}
+          </Suspense></ErrorBoundary>
+        ) : (
+          <>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 16px', borderBottom: '1px solid var(--hairline)',
+              background: 'var(--glass-bg, var(--bg-2))',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {(() => {
+                  const config = OVERLAY_CONFIG[panel];
+                  return config ? (
+                    <>
+                      {config.icon}
+                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--body)' }}>
+                        {t(config.titleKey)}
+                      </span>
+                    </>
+                  ) : null;
+                })()}
+              </div>
+              <button
+                onClick={onClose}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--mute)', padding: 4, borderRadius: 4,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              {panel === 'dimension-display' && (
+                <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><DimensionDisplayView /></Suspense></ErrorBoundary>
+              )}
+              {panel === 'writing-workbench' && (
+                <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><PaperWritingWorkbench /></Suspense></ErrorBoundary>
+              )}
+              {panel === 'dblp' && (
+                <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><DBLPPanel /></Suspense></ErrorBoundary>
+              )}
+              {panel === 'paper-dimensions' && (
+                <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><PaperDimensionView /></Suspense></ErrorBoundary>
+              )}
+              {panel === 'literature-table' && (
+                <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><LiteratureTableView /></Suspense></ErrorBoundary>
+              )}
+              {panel === 'literature-review' && (
+                <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><LiteratureReviewView /></Suspense></ErrorBoundary>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PANEL_DEFS: Record<string, PanelDef> = {
   'file-explorer': { id: 'file-explorer', titleKey: 'layout.panelFileExplorer', defaultWidth: 260, minWidth: 180 },
   'search':        { id: 'search',        titleKey: 'layout.panelSearch',  defaultWidth: 320, minWidth: 220 },
@@ -111,6 +212,12 @@ const PANEL_DEFS: Record<string, PanelDef> = {
   'literature-review': { id: 'literature-review', titleKey: 'layout.panelLiteratureReview', defaultWidth: 900, minWidth: 600 },
   'dimension-display': { id: 'dimension-display', titleKey: 'layout.panelDimensionDisplay', defaultWidth: 900, minWidth: 600 },
   'writing-workbench': { id: 'writing-workbench', titleKey: 'layout.panelWritingWorkbench', defaultWidth: 900, minWidth: 600 },
+  'documents':     { id: 'documents',     titleKey: 'layout.panelDocuments', defaultWidth: 800, minWidth: 600 },
+  'batch-literature': { id: 'batch-literature', titleKey: 'layout.panelBatchLiterature', defaultWidth: 800, minWidth: 600 },
+  'plagiarism':    { id: 'plagiarism',    titleKey: 'layout.panelPlagiarism', defaultWidth: 700, minWidth: 500 },
+  'latex-editor':  { id: 'latex-editor',  titleKey: 'layout.panelLatexEditor', defaultWidth: 900, minWidth: 600 },
+  'lab-notebook':  { id: 'lab-notebook',  titleKey: 'layout.panelLabNotebook', defaultWidth: 900, minWidth: 600 },
+  'knowledge-graph': { id: 'knowledge-graph', titleKey: 'layout.panelKnowledgeGraph', defaultWidth: 900, minWidth: 600 },
 };
 
 /** 看板功能卡片 — 莫兰迪色系 */
@@ -129,11 +236,14 @@ const FEATURE_ITEMS: FeatureItem[] = [
   { id: 'writing-workbench', icon: Brain,   labelKey: 'layout.panelWritingWorkbench', color: '#8b5cf6', group: 'academic' },
   { id: 'whiteboard',    icon: Lightbulb,   labelKey: 'layout.panelWhiteboard',   color: '#f59e0b', group: 'academic' },
   { id: 'dblp',          icon: Globe,        labelKey: 'layout.panelDBLP',          color: '#8EA8C3', group: 'academic' },
-  { id: 'xrd-plot',      icon: FlaskConical, labelKey: 'layout.panelXRDPlot',       color: '#059669', group: 'academic' },
-  { id: 'rsm-3d',        icon: Box,          labelKey: 'layout.panelRSM3D',         color: '#7c3aed', group: 'academic' },
-  { id: 'spectrum',      icon: Waves,        labelKey: 'layout.panelSpectrum',      color: '#0891b2', group: 'academic' },
-  { id: 'statistics',    icon: BarChart3,    labelKey: 'layout.panelStatistics',    color: '#dc2626', group: 'academic' },
+  { id: 'plot-studio',   icon: FlaskConical, labelKey: 'layout.panelPlotStudio',    color: '#059669', group: 'academic' },
   { id: 'notes',         icon: PenTool,      labelKey: 'layout.panelNotes',        color: '#9DB4AB', group: 'academic' },
+  { id: 'documents',     icon: FileEdit,     labelKey: 'layout.panelDocuments',    color: '#6366f1', group: 'academic' },
+  { id: 'batch-literature', icon: FileSearch, labelKey: 'layout.panelBatchLiterature', color: '#0ea5e9', group: 'academic' },
+  { id: 'plagiarism',    icon: FileSearch,   labelKey: 'layout.panelPlagiarism',  color: '#ef4444', group: 'academic' },
+  { id: 'latex-editor',  icon: Sigma,        labelKey: 'layout.panelLatexEditor', color: '#14b8a6', group: 'academic' },
+  { id: 'lab-notebook',  icon: Microscope,   labelKey: 'layout.panelLabNotebook', color: '#a855f7', group: 'academic' },
+  { id: 'knowledge-graph', icon: Network,    labelKey: 'layout.panelKnowledgeGraph', color: '#f59e0b', group: 'visual' },
   { id: 'material',      icon: HardDrive,    labelKey: 'layout.panelMaterials',    color: '#B5A68E', group: 'academic' },
   // ── 可视化 & 绘图 ──
   { id: 'graph',         icon: Share2,       labelKey: 'layout.panelGraph',        color: '#8FB8C0', group: 'visual' },
@@ -148,6 +258,7 @@ const FEATURE_ITEMS: FeatureItem[] = [
   { id: 'templates',     icon: BookOpen,     labelKey: 'layout.panelTemplates',    color: '#9DB4AB', group: 'system' },
   { id: 'data-export',   icon: Database,     labelKey: 'layout.panelDataExport',   color: '#8EA8C3', group: 'system' },
   { id: 'monitoring',    icon: Activity,     labelKey: 'layout.panelMonitoring',   color: '#B5A68E', group: 'system' },
+  { id: 'help-center',  icon: HelpCircle,   labelKey: 'layout.panelHelpCenter',   color: '#6366f1', group: 'system' },
 ];
 
 /** 侧边栏窄条模式下的图标（精简版） */
@@ -158,9 +269,13 @@ const SIDEBAR_COMPACT_ITEMS = [
   { id: 'agent',         icon: Sparkles,     tooltipKey: 'layout.panelAgent' },
   { id: 'writing',       icon: GraduationCap,tooltipKey: 'layout.panelWriting' },
   { id: 'notes',         icon: PenTool,      tooltipKey: 'layout.panelNotes' },
+  { id: 'documents',     icon: FileEdit,     tooltipKey: 'layout.panelDocuments' },
   { id: 'graph',         icon: Share2,       tooltipKey: 'layout.panelGraph' },
   { id: 'figure',        icon: Image,        tooltipKey: 'layout.panelFigure' },
   { id: 'charts',        icon: TrendingUp,   tooltipKey: 'layout.panelCharts' },
+  { id: 'knowledge-graph', icon: Network,    tooltipKey: 'layout.panelKnowledgeGraph' },
+  { id: 'latex-editor',  icon: Sigma,        tooltipKey: 'layout.panelLatexEditor' },
+  { id: 'lab-notebook',  icon: Microscope,   tooltipKey: 'layout.panelLabNotebook' },
 ];
 
 const GROUP_LABELS: Record<string, string> = {
@@ -181,22 +296,60 @@ export const ObsidianLayout: React.FC = () => {
     editorTabs, activeTabId,
     showAIPanel, setShowAIPanel,
     openFile,
-    handleFileUpload, fileInputRef,
     pdfFile, pdfFullText,
+    showFloatingTranslate, floatTranslateText, floatTranslatePos,
+    setShowFloatingTranslate, setFloatTranslateText,
   } = useApp();
 
   const {
-    openPanels, togglePanel, closePanel,
+    openPanels, togglePanel, closePanel, setOpenPanels,
   } = usePanels();
+
+  // 面板切换 store — 监听跨组件面板切换请求
+  const consumePanelSwitch = usePanelSwitchStore((s) => s.consumeSwitch);
+  const panelSwitchTarget = usePanelSwitchStore((s) => s.targetPanel);
+
+  // 消费面板切换请求
+  useEffect(() => {
+    const target = consumePanelSwitch();
+    if (target) {
+      // 切换到工作区模式
+      setViewMode('workspace');
+      // 如果面板未打开则打开
+      if (!openPanelsRef.current.includes(target)) {
+        togglePanel(target);
+      }
+      setAnimatingPanels(prev => ({ ...prev, [target]: 'in' }));
+      setTimeout(() => {
+        setAnimatingPanels(prev => {
+          const next = { ...prev };
+          delete next[target];
+          return next;
+        });
+      }, 450);
+    }
+  }, [panelSwitchTarget]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openPanelsRef = useRef(openPanels);
   openPanelsRef.current = openPanels;
 
   const { selection: globalSelection } = useTextSelection(2);
 
-  /* ── 视图模式：dashboard（看板）/ workspace（工作区） ── */
-  const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
+  /* translate window state */
+  const [translateText, setTranslateText] = useState<string | null>(null);
+  const [showFullPage, setShowFullPage] = useState<string | null>(null);
+  const [translatePosition, setTranslatePosition] = useState<{ x: number; y: number } | null>(null);
+
+  /* ── 面板与看板联动 ── */
+  useEffect(() => {
+    if (openPanels.length === 0 && viewMode === 'workspace') {
+      setViewMode('dashboard');
+    } else if (openPanels.length > 0 && viewMode === 'dashboard') {
+      setViewMode('workspace');
+    }
+  }, [openPanels.length, viewMode]);
 
   /* ── 鼠标追踪（浮动AgentBar用） ── */
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
@@ -240,8 +393,9 @@ export const ObsidianLayout: React.FC = () => {
 
   /* ── 返回看板 ── */
   const goDashboard = useCallback(() => {
+    setOpenPanels([]);
     setViewMode('dashboard');
-  }, []);
+  }, [setOpenPanels]);
 
   /* ── 看板底部轻量对话 ── */
   const [dashInput, setDashInput] = useState('');
@@ -268,7 +422,7 @@ export const ObsidianLayout: React.FC = () => {
 
   const handleFeatureClick = useCallback((itemId: string) => {
     setSidebarExpanded(false);
-    if (itemId === 'dimension-display' || itemId === 'dblp' || itemId === 'writing-workbench' || itemId === 'xrd-plot' || itemId === 'rsm-3d' || itemId === 'spectrum' || itemId === 'statistics') {
+    if (itemId === 'dimension-display' || itemId === 'dblp' || itemId === 'writing-workbench' || itemId === 'plot-studio' || itemId === 'help-center') {
       setOverlayPanel(itemId);
     } else {
       enterWorkspace(itemId);
@@ -304,6 +458,11 @@ export const ObsidianLayout: React.FC = () => {
     if (!openPanelsRef.current.includes('agent')) togglePanel('agent');
   }, [togglePanel]);
 
+  const handleTranslate = useCallback((text: string) => {
+    if (!text) return;
+    setTranslateText(text);
+    setTranslatePosition(mousePosRef.current);
+  }, []);
   const handleOpenPdf = useCallback((key: string, title: string) => {
     openFile(title + '.pdf', 'pdf', { pdfUrl: `/api/zotero/items/${key}/pdf` });
   }, [openFile]);
@@ -417,6 +576,12 @@ export const ObsidianLayout: React.FC = () => {
       case 'dblp':          return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><DBLPPanel /></Suspense></ErrorBoundary>;
       case 'dimension-display': return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><DimensionDisplayView /></Suspense></ErrorBoundary>;
       case 'writing-workbench': return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><PaperWritingWorkbench /></Suspense></ErrorBoundary>;
+      case 'documents':     return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><DocumentList /></Suspense></ErrorBoundary>;
+      case 'batch-literature': return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><BatchLiteraturePanel /></Suspense></ErrorBoundary>;
+      case 'plagiarism':    return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><PlagiarismCheckPanel /></Suspense></ErrorBoundary>;
+      case 'latex-editor':  return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><LatexEditorPanel /></Suspense></ErrorBoundary>;
+      case 'lab-notebook':  return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><LabNotebookPanel /></Suspense></ErrorBoundary>;
+      case 'knowledge-graph': return <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><KnowledgeGraphPanel /></Suspense></ErrorBoundary>;
       default:              return <div className="acasight-empty"><p>{t('layout.unknownPanel')}</p></div>;
     }
   };
@@ -430,7 +595,7 @@ export const ObsidianLayout: React.FC = () => {
         {idx > 0 && <div className="acasight-context-item" onClick={() => handleContextAction('move-left', contextMenu.panelId)}><ChevronsRight size={14} style={{ transform: 'rotate(180deg)' }} />{t('layout.moveLeft')}</div>}
         {idx < openPanels.length - 1 && <div className="acasight-context-item" onClick={() => handleContextAction('move-right', contextMenu.panelId)}><ChevronsRight size={14} />{t('layout.moveRight')}</div>}
         {!isEditor && <div className="acasight-context-divider" />}
-        {!isEditor && <div className="acasight-context-item" onClick={() => handleContextAction('close', contextMenu.panelId)}><X size={14} />{t('layout.closePanel')}</div>}
+        <div className="acasight-context-item" onClick={() => handleContextAction('close', contextMenu.panelId)}><X size={14} />{t('layout.closePanel')}</div>
         {openPanels.length > 1 && <div className="acasight-context-item" onClick={() => handleContextAction('close-others', contextMenu.panelId)}><ChevronsRight size={14} />{t('layout.closeOthers')}</div>}
       </div>
     );
@@ -557,102 +722,16 @@ export const ObsidianLayout: React.FC = () => {
               <Send size={18} />
             </button>
           </div>
-        </div>
-
-        {overlayPanel && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }} onClick={() => setOverlayPanel(null)}>
-            <div
-              style={{
-                width: '90vw', maxWidth: 1100, height: '80vh',
-                borderRadius: 12, background: 'var(--canvas)',
-                border: '1px solid var(--hairline)',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-                overflow: 'hidden', display: 'flex', flexDirection: 'column',
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 16px', borderBottom: '1px solid var(--hairline)',
-                background: 'var(--glass-bg, var(--bg-2))',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {(() => {
-                    const overlayPanelConfig: Record<string, { icon: React.ReactNode; titleKey: string }> = {
-                      'dimension-display': { icon: <Table2 size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelDimensionDisplay' },
-                      'writing-workbench': { icon: <Brain size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelWritingWorkbench' },
-                      'dblp': { icon: <Globe size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelDBLP' },
-                      'paper-dimensions': { icon: <Brain size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelPaperDimensions' },
-                      'literature-table': { icon: <Table2 size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelLiteratureTable' },
-                      'literature-review': { icon: <BookOpen size={16} style={{ color: 'var(--accent)' }} />, titleKey: 'layout.panelLiteratureReview' },
-                      'xrd-plot': { icon: <FlaskConical size={16} style={{ color: '#059669' }} />, titleKey: 'layout.panelXRDPlot' },
-                      'rsm-3d': { icon: <Box size={16} style={{ color: '#7c3aed' }} />, titleKey: 'layout.panelRSM3D' },
-                      'spectrum': { icon: <Waves size={16} style={{ color: '#0891b2' }} />, titleKey: 'layout.panelSpectrum' },
-                      'statistics': { icon: <BarChart3 size={16} style={{ color: '#dc2626' }} />, titleKey: 'layout.panelStatistics' },
-                    };
-                    const config = overlayPanelConfig[overlayPanel];
-                    return config ? (
-                      <>
-                        {config.icon}
-                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--body)' }}>
-                          {t(config.titleKey)}
-                        </span>
-                      </>
-                    ) : null;
-                  })()}
-                </div>
-                <button
-                  onClick={() => setOverlayPanel(null)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'var(--mute)', padding: 4, borderRadius: 4,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                {overlayPanel === 'dimension-display' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><DimensionDisplayView /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'writing-workbench' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><PaperWritingWorkbench /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'dblp' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><DBLPPanel /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'paper-dimensions' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><PaperDimensionView /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'literature-table' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><LiteratureTableView /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'literature-review' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><LiteratureReviewView /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'xrd-plot' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><XRDStackedChart /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'rsm-3d' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><ResponseSurface3D /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'spectrum' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><SpectrumProcessor /></Suspense></ErrorBoundary>
-                )}
-                {overlayPanel === 'statistics' && (
-                  <ErrorBoundary><Suspense fallback={<PanelSkeleton />}><StatisticsPanel /></Suspense></ErrorBoundary>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+      </div>
+
     );
+  };
+
+  /* ── 看板覆盖层（独立渲染，避免嵌套在 dashboard div 内） ── */
+  const renderOverlay = () => {
+    if (!overlayPanel) return null;
+    return <DashboardOverlay panel={overlayPanel} onClose={() => setOverlayPanel(null)} t={t} />;
   };
 
   /* ──────────── 工作区（PDF阅读器+面板） ──────────── */
@@ -699,16 +778,34 @@ export const ObsidianLayout: React.FC = () => {
       {/* 主内容区 */}
       <div className="acasight-panel-container" ref={containerRef} role="main" aria-label={t('layout.mainContent')}>
         {openPanels.length === 0 ? (
-          /* 没有面板打开时默认显示 PDF 阅读器 */
+          /* 看板页面（所有面板关闭时的过渡状态，useEffect 会自动跳转到完整看板） */
           <div className="acasight-panel" style={{ flex: 1 }}>
             <div className="acasight-panel-header">
               <span className="acasight-panel-title">
-                <FileText size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                {activeFile || t('layout.panelEditor')}
+                <LayoutGrid size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                看板
               </span>
             </div>
-            <div className="acasight-panel-body">
-              <EditorView />
+            <div className="acasight-panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+              <div style={{ fontSize: 48, opacity: 0.15 }}>📊</div>
+              <p style={{ color: 'var(--mute)', fontSize: 14 }}>从左侧功能栏选择功能开始使用</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 600 }}>
+                {FEATURE_ITEMS.slice(0, 8).map((f: FeatureItem) => (
+                  <button
+                    key={f.id}
+                    onClick={() => enterWorkspace(f.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '8px 14px', borderRadius: 8,
+                      background: 'var(--accent-bg-soft)', border: '1px solid var(--hairline)',
+                      color: 'var(--body)', cursor: 'pointer', fontSize: 12,
+                    }}
+                  >
+                    <f.icon size={14} style={{ color: f.color }} />
+                    {t(f.labelKey)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
@@ -726,7 +823,7 @@ export const ObsidianLayout: React.FC = () => {
                   <div className="acasight-panel-header">
                     <span className="acasight-panel-title">{isEditor ? (activeFile || t('layout.panelEditor')) : (def ? t(def.titleKey) : panelId)}</span>
                     <div className="acasight-panel-actions">
-                      {!isEditor && <button className="acasight-panel-btn" title={t('common.close')} onClick={() => animatedTogglePanel(panelId)}><X size={14} /></button>}
+                      <button className="acasight-panel-btn" title={t('common.close')} onClick={() => animatedTogglePanel(panelId)}><X size={14} /></button>
                     </div>
                   </div>
                   <div className="acasight-panel-body">{renderPanelContent(panelId)}</div>
@@ -746,7 +843,33 @@ export const ObsidianLayout: React.FC = () => {
         pdfText={pdfFullText}
         mousePosition={mousePos}
         onOpenAgentPanel={handleOpenAgentPanel}
+        onTranslate={handleTranslate}
       />
+
+      {translateText && translatePosition && (
+        <FloatingTranslate
+          text={translateText}
+          position={translatePosition}
+          onClose={() => setTranslateText(null)}
+          onOpenFullPage={(t: string) => { setShowFullPage(t); setTranslateText(null); }}
+        />
+      )}
+
+      {showFloatingTranslate && floatTranslateText && (
+        <FloatingTranslate
+          text={floatTranslateText}
+          position={floatTranslatePos}
+          onClose={() => { setShowFloatingTranslate(false); setFloatTranslateText(''); }}
+          onOpenFullPage={(t: string) => { setShowFullPage(t); setShowFloatingTranslate(false); setFloatTranslateText(''); }}
+        />
+      )}
+
+      {showFullPage && (
+        <FullPageTranslate
+          text={showFullPage}
+          onClose={() => setShowFullPage(null)}
+        />
+      )}
 
       {renderContextMenu()}
     </div>
@@ -755,9 +878,16 @@ export const ObsidianLayout: React.FC = () => {
   /* ──────────── main render ──────────── */
   return (
     <FileOpenProvider openFile={openFile}>
-      {/* @ts-expect-error React 19 ref compatibility */}
-      <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} style={{ display: 'none' }} />
+      {/* Tauri drag & drop handler */}
+      <TauriDragDrop onFilesDropped={(paths) => {
+        const pdfPaths = paths.filter(p => p.toLowerCase().endsWith('.pdf'));
+        if (pdfPaths.length > 0) {
+          const name = pdfPaths[0].split(/[/\\]/).pop() || 'document.pdf';
+          openFile(name, 'pdf', { file: pdfPaths[0] });
+        }
+      }} />
       {viewMode === 'dashboard' ? renderDashboard() : renderWorkspace()}
+      {viewMode === 'dashboard' && renderOverlay()}
       {viewMode === 'dashboard' && showSettings && <SettingsModal onClose={() => setShowSettings(false)} showAI={showAIPanel} onToggleAI={() => setShowAIPanel(prev => !prev)} />}
     </FileOpenProvider>
   );

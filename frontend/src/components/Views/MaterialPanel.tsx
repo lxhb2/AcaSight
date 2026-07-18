@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { storageApi, type MaterialItem, type CacheEntry } from '@/services/api';
 import { useFileOpen } from '@/contexts/FileOpenContext';
+import { openFile as openFilePicker } from '@/lib/tauri-adapter';
 
 const FILE_TYPE_CATEGORIES = [
   { key: '', label: '全部', icon: <FolderOpen size={13} /> },
@@ -85,7 +86,6 @@ export const MaterialPanel: React.FC = () => {
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
   const showToast = (msg: string, type: string) => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const { openFile } = useFileOpen();
 
@@ -155,6 +155,36 @@ export const MaterialPanel: React.FC = () => {
     }
   };
 
+  const handleUploadFromAdapter = useCallback(async () => {
+    const files = await openFilePicker({ multiple: true, filters: [
+      { name: 'Documents', extensions: ['pdf', 'doc', 'docx', 'txt', 'md', 'rtf'] },
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] },
+      { name: 'Data', extensions: ['csv', 'tsv', 'xlsx', 'xls', 'json', 'xml'] },
+    ] });
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      for (const f of files) {
+        const ext = getExtension(f.name);
+        let cat = 'other';
+        if (ext === 'pdf') cat = 'pdf';
+        else if (IMAGE_EXTENSIONS.has(ext)) cat = 'image';
+        else if (ext === 'svg') cat = 'svg';
+        else if (DATA_EXTENSIONS.has(ext)) cat = 'data';
+        else if (DOC_EXTENSIONS.has(ext)) cat = 'doc';
+        // Convert Uint8Array to File for storageApi
+        const file = new globalThis.File([f.content as BlobPart], f.name);
+        await storageApi.unifiedUpload(file, cat);
+      }
+      showToast(`已上传 ${files.length} 个文件`, 'success');
+      loadMaterials();
+    } catch (e: unknown) {
+      showToast(`上传失败: ${e instanceof Error ? e.message : String(e)}`, 'error');
+    } finally {
+      setUploading(false);
+    }
+  }, [loadMaterials, showToast]);
+
   const handleDelete = async (path: string) => {
     try {
       await storageApi.unifiedDelete(path);
@@ -171,14 +201,19 @@ export const MaterialPanel: React.FC = () => {
       showToast('该格式暂不支持预览', 'error');
       return;
     }
-    const baseUrl = '/api/storage/unified/file';
-    const fileUrl = `${baseUrl}?path=${encodeURIComponent(m.path)}`;
     if (openType === 'pdf') {
-      openFile(m.filename, 'pdf', { pdfUrl: fileUrl });
-    } else if (openType === 'svg') {
-      openFile(m.filename, 'svg', { imageUrl: fileUrl });
+      // PDF 使用 /api/pdf/proxy 端点，支持 proxy/hash/extract-text 全部功能
+      const proxyUrl = `/api/pdf/proxy?url=${encodeURIComponent(m.path)}`;
+      openFile(m.filename, 'pdf', { pdfUrl: proxyUrl });
     } else {
-      openFile(m.filename, 'image', { imageUrl: fileUrl });
+      // 图片/SVG 使用 unified/file 端点
+      const baseUrl = '/api/storage/unified/file';
+      const fileUrl = `${baseUrl}?path=${encodeURIComponent(m.path)}`;
+      if (openType === 'svg') {
+        openFile(m.filename, 'svg', { imageUrl: fileUrl });
+      } else {
+        openFile(m.filename, 'image', { imageUrl: fileUrl });
+      }
     }
   }, [openFile, showToast]);
 
@@ -262,7 +297,7 @@ export const MaterialPanel: React.FC = () => {
             ref={dropRef}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleUploadFromAdapter}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 6, padding: 20, marginBottom: 10, borderRadius: 8,
@@ -277,8 +312,6 @@ export const MaterialPanel: React.FC = () => {
             ) : (
               <><Upload size={20} style={{ color: 'var(--mute)' }} /><span style={{ fontSize: 11, color: 'var(--mute)' }}>拖拽文件到此处或点击上传</span></>
             )}
-            <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }}
-              onChange={e => { if (e.target.files) handleUpload(e.target.files); }} />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 10, color: 'var(--mute)' }}>

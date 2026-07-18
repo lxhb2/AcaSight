@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ImagePlus, Upload, X, Sparkles,
@@ -8,6 +8,7 @@ import {
   Code, BarChart3, GitBranch,
 } from 'lucide-react';
 import { paperBananaApi, type PaperBananaPlotResult, type PaperBananaStyle } from '@/services/api';
+import { saveFile, openFile } from '@/lib/tauri-adapter';
 import { LazyImage } from '@/components/Common/LazyImage';
 
 type GenerationMode = 'plot' | 'diagram';
@@ -23,7 +24,6 @@ const COLOR_SCHEMES = [
 
 interface ReferenceImage {
   id: string;
-  file: File;
   preview: string;
   label: string;
 }
@@ -44,7 +44,6 @@ interface FigureGenerationPanelProps {
 
 export const FigureGenerationPanel: React.FC<FigureGenerationPanelProps> = ({ onInsertToWriting }) => {
   const { t } = useTranslation();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [params, setParams] = useState<GenerationParams>({
     prompt: '',
@@ -84,25 +83,22 @@ export const FigureGenerationPanel: React.FC<FigureGenerationPanelProps> = ({ on
     setParams(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const newImages: ReferenceImage[] = [];
-    Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) return;
-      const preview = URL.createObjectURL(file);
-      newImages.push({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        file,
-        preview,
-        label: file.name,
+  const handleImageUpload = useCallback(async () => {
+    try {
+      const files = await openFile({
+        multiple: true,
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'] }],
       });
-    });
-    setParams(prev => ({
-      ...prev,
-      referenceImages: [...prev.referenceImages, ...newImages].slice(0, 4),
-    }));
-    if (e.target) e.target.value = '';
+      const newImages: ReferenceImage[] = files.map(f => ({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        preview: URL.createObjectURL(new Blob([f.content as BlobPart])),
+        label: f.name,
+      }));
+      setParams(prev => ({
+        ...prev,
+        referenceImages: [...prev.referenceImages, ...newImages].slice(0, 4),
+      }));
+    } catch { /* user cancelled */ }
   }, []);
 
   const removeReferenceImage = useCallback((id: string) => {
@@ -174,14 +170,19 @@ export const FigureGenerationPanel: React.FC<FigureGenerationPanelProps> = ({ on
     }
   }, [generatedImage, generatedCaption, onInsertToWriting]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!generatedImage) return;
-    const a = document.createElement('a');
-    a.href = generatedImage;
-    a.download = `figure-${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      // base64 to Uint8Array
+      const base64 = generatedImage.split(',')[1];
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      await saveFile(bytes, {
+        filters: [{ name: 'PNG', extensions: ['png'] }],
+        defaultPath: `figure-${Date.now()}.png`,
+      });
+    } catch { /* user cancelled */ }
   }, [generatedImage]);
 
   return (
@@ -235,7 +236,7 @@ export const FigureGenerationPanel: React.FC<FigureGenerationPanelProps> = ({ on
               {t('figure.referenceImages')} ({params.referenceImages.length}/4)
             </label>
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleImageUpload}
               style={{
                 fontSize: 11, padding: '3px 10px', borderRadius: 'var(--radius-sm)',
                 background: 'var(--accent-bg-soft)', border: '1px solid var(--hairline)',
@@ -244,7 +245,6 @@ export const FigureGenerationPanel: React.FC<FigureGenerationPanelProps> = ({ on
             >
               <Upload size={11} /> {t('figure.uploadRef')}
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
           </div>
           {params.referenceImages.length > 0 ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -258,7 +258,7 @@ export const FigureGenerationPanel: React.FC<FigureGenerationPanelProps> = ({ on
               ))}
             </div>
           ) : (
-            <div onClick={() => fileInputRef.current?.click()} style={{ padding: '16px 12px', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--hairline)', background: 'var(--canvas-soft)', textAlign: 'center', cursor: 'pointer' }}>
+            <div onClick={handleImageUpload} style={{ padding: '16px 12px', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--hairline)', background: 'var(--canvas-soft)', textAlign: 'center', cursor: 'pointer' }}>
               <ImagePlus size={20} style={{ color: 'var(--mute)', marginBottom: 4 }} />
               <div style={{ fontSize: 11, color: 'var(--mute)' }}>{t('figure.dropImages')}</div>
             </div>

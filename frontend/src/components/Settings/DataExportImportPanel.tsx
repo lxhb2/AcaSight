@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, Upload, Trash2, RefreshCw, Clock, Tag, Loader2, AlertTriangle, Check, X, FileDown, FileUp, Copy } from 'lucide-react';
 import { workspaceStateApi, type WorkspaceInfo, type WorkspaceSnapshot } from '@/services/api';
+import { saveFile, openTextFile } from '@/lib/tauri-adapter';
 
 interface DataExportImportPanelProps {
   onClose?: () => void;
@@ -22,7 +23,6 @@ export const DataExportImportPanel: React.FC<DataExportImportPanelProps> = ({ on
   const [importJson, setImportJson] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'workspaces' | 'export' | 'import'>('workspaces');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadWorkspaces = useCallback(async () => {
     setLoading(true);
@@ -64,13 +64,11 @@ export const DataExportImportPanel: React.FC<DataExportImportPanelProps> = ({ on
     setSuccessMsg(null);
     try {
       const res = await workspaceStateApi.export(selectedId, includeSnapshots);
-      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `acasight-workspace-${selectedId}-${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const jsonStr = JSON.stringify(res.data, null, 2);
+      await saveFile(jsonStr, {
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+        defaultPath: `acasight-workspace-${selectedId}-${Date.now()}.json`,
+      });
       setSuccessMsg(t('dataExport.exportSuccess', '导出成功'));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -98,16 +96,17 @@ export const DataExportImportPanel: React.FC<DataExportImportPanelProps> = ({ on
     }
   }, [importJson, overwrite, t, loadWorkspaces]);
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      setImportJson(text);
-      setActiveTab('import');
-    };
-    reader.readAsText(file);
+  const handleFileUpload = useCallback(async () => {
+    try {
+      const files = await openTextFile({
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+        multiple: false,
+      });
+      if (files.length > 0) {
+        setImportJson(files[0].content);
+        setActiveTab('import');
+      }
+    } catch { /* user cancelled */ }
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
@@ -329,9 +328,8 @@ export const DataExportImportPanel: React.FC<DataExportImportPanelProps> = ({ on
             </p>
 
             <div style={{ marginBottom: 12 }}>
-              <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileUpload} style={{ display: 'none' }} />
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleFileUpload}
                 style={{
                   padding: '8px 16px', borderRadius: 8, border: '1px dashed var(--accent)',
                   background: 'rgba(99,102,241,0.05)', color: 'var(--accent)',

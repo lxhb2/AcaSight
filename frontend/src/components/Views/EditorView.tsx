@@ -6,21 +6,23 @@
  */
 
 import type { PDFDocumentProxy, PDFPageProxy, TextItem } from 'pdfjs-dist/types/src/display/api';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import {
   X, Plus, ZoomIn, ZoomOut,
   FileText, FileCode, Upload, Download,
-  Loader2, Highlighter,
+  Loader2,
   Clock, Trash2, Save, MessageSquare,
-  Eraser, MessageCircle, Sparkles,
+  Sparkles, Languages,
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import AnnotationOverlay from '@/components/AnnotationOverlay';
 import AnnotationSidebarPanel from '@/components/AnnotationSidebarPanel';
 import { OutlineView } from '@/components/Views/OutlineView';
 import { ImageViewer } from '@/components/Common/ImageViewer';
+import { BilingualPDFViewer } from '@/components/Translate/BilingualPDFViewer';
+import { Annotator } from '@/components/PDFReader/Annotator';
 import { annotationsApi } from '@/services/api';
 import type { AnnotationItem } from '@/services/api';
 
@@ -30,13 +32,15 @@ export const EditorView: React.FC = () => {
     pdfFile, pdfFullText, setPdfFullText, pdfDocRef, pdfTextPagesRef,
     numPages, setNumPages, currentPage, setCurrentPage, scale, setScale,
     showAIPanel, editorRightTab,
-    fileInputRef,
+    openFilePicker,
     annotations,
-    annotationTool, setAnnotationTool, annotationColor, setAnnotationColor,
+    createAnnotation, pdfHash,
   } = useApp();
 
   // ---- Track actual page dimensions (fix AnnotationOverlay misalignment) ----
   const [pageSizes, setPageSizes] = useState<Record<number, { width: number; height: number }>>({});
+  const [showBilingual, setShowBilingual] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // ---- Jump to PDF page (for NotesPanel [Pn] links) ----
   const handleJumpToPage = useCallback((page: number) => {
@@ -59,7 +63,7 @@ export const EditorView: React.FC = () => {
       <div className="acasight-empty">
         <Upload size={48} />
         <p>打开 PDF 文件或从文献树选择论文</p>
-        <button onClick={() => fileInputRef.current?.click()} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13 }}>选择 PDF 文件</button>
+        <button onClick={openFilePicker} style={{ marginTop: 8, padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13 }}>选择 PDF 文件</button>
       </div>
     );
   }
@@ -98,125 +102,11 @@ export const EditorView: React.FC = () => {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* PDF Scroll Container */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Annotation Toolbar */}
-          {pdfFile && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              borderBottom: '1px solid var(--hairline)',
-              background: 'var(--glass-bg)',
-              backdropFilter: 'blur(var(--glass-blur))',
-              WebkitBackdropFilter: 'blur(var(--glass-blur))',
-            }}>
-              <span style={{ fontSize: 11, color: 'var(--mute)', marginRight: 4 }}>标注</span>
-              <div style={{ width: 1, height: 16, background: 'var(--hairline)', margin: '0 2px' }} />
-              {/* Highlight buttons - 4 colors */}
-              {[
-                { color: '#FFEB3B', label: '黄色高亮' },
-                { color: '#66BB6A', label: '绿色高亮' },
-                { color: '#42A5F5', label: '蓝色高亮' },
-                { color: '#F48FB1', label: '粉色高亮' },
-              ].map(({ color, label }) => (
-                <button
-                  key={color}
-                  title={label}
-                  onClick={() => {
-                    setAnnotationTool(annotationTool === 'highlight' && annotationColor === color ? null : 'highlight');
-                    setAnnotationColor(color);
-                  }}
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 4,
-                    border: annotationTool === 'highlight' && annotationColor === color ? '2px solid var(--ink)' : '2px solid transparent',
-                    background: color,
-                    cursor: 'pointer',
-                    opacity: annotationTool === 'eraser' ? 0.4 : 1,
-                    transition: 'all 0.15s',
-                  }}
-                />
-              ))}
-              <div style={{ width: 1, height: 16, background: 'var(--hairline)', margin: '0 2px' }} />
-              {/* Underline button */}
-              <button
-                title="下划线"
-                onClick={() => setAnnotationTool(annotationTool === 'underline' ? null : 'underline')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 28,
-                  height: 22,
-                  borderRadius: 4,
-                  border: 'none',
-                  background: annotationTool === 'underline' ? 'var(--accent-bg-soft)' : 'transparent',
-                  cursor: 'pointer',
-                  color: annotationTool === 'underline' ? 'var(--accent)' : 'var(--body)',
-                  borderBottom: annotationTool === 'underline' ? '3px solid var(--accent)' : '3px solid var(--body)',
-                  fontWeight: 'bold',
-                  fontSize: 12,
-                  transition: 'all 0.15s',
-                }}
-              >
-                U
-              </button>
-              {/* Text annotation button */}
-              <button
-                title="文本注释"
-                onClick={() => setAnnotationTool(annotationTool === 'note' ? null : 'note')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 28,
-                  height: 22,
-                  borderRadius: 4,
-                  border: 'none',
-                  background: annotationTool === 'note' ? 'var(--accent-bg-soft)' : 'transparent',
-                  cursor: 'pointer',
-                  color: annotationTool === 'note' ? 'var(--accent)' : 'var(--body)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <MessageCircle size={14} />
-              </button>
-              <div style={{ width: 1, height: 16, background: 'var(--hairline)', margin: '0 2px' }} />
-              {/* Eraser button */}
-              <button
-                title="橡皮擦（删除标注）"
-                onClick={() => setAnnotationTool(annotationTool === 'eraser' ? null : 'eraser')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 28,
-                  height: 22,
-                  borderRadius: 4,
-                  border: 'none',
-                  background: annotationTool === 'eraser' ? 'var(--accent-bg-soft)' : 'transparent',
-                  cursor: 'pointer',
-                  color: annotationTool === 'eraser' ? 'var(--accent)' : 'var(--body)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <Eraser size={14} />
-              </button>
-              {annotationTool && (
-                <>
-                  <div style={{ width: 1, height: 16, background: 'var(--hairline)', margin: '0 2px' }} />
-                  <span style={{ fontSize: 10, color: 'var(--accent)' }}>
-                    {annotationTool === 'highlight' ? '高亮模式' : annotationTool === 'underline' ? '下划线模式' : annotationTool === 'note' ? '注释模式' : '擦除模式'}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
           {/* PDF Scroll Area */}
           <div
+            ref={scrollRef}
             id="pdf-scroll-container"
-            style={{ flex: 1, overflow: 'auto', position: 'relative', userSelect: 'text', cursor: annotationTool ? 'crosshair' : 'text', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+            style={{ flex: 1, overflow: 'auto', position: 'relative', userSelect: 'text', cursor: 'text', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
           onScroll={(e) => {
             const container = e.currentTarget;
             const pages = container.querySelectorAll('.react-pdf__Page');
@@ -248,7 +138,7 @@ export const EditorView: React.FC = () => {
               loading={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, color: 'var(--mute)' }}><Loader2 className="animate-spin" style={{ marginRight: 8 }} />加载 PDF...</div>}
             >
               {Array.from({ length: numPages }, (_, i) => (
-                <div key={i + 1} className="pdf-page-wrapper" style={{ position: 'relative', margin: '0 auto', lineHeight: 0, fontSize: 0 }}>
+                <div key={i + 1} className="pdf-page-wrapper" data-page-number={i + 1} style={{ position: 'relative', margin: '0 auto', lineHeight: 0, fontSize: 0 }}>
                   <Page
                     pageNumber={i + 1}
                     scale={scale}
@@ -289,6 +179,23 @@ export const EditorView: React.FC = () => {
             </Document>
           )}
 
+          {/* Annotator — 统一文字选择 + 工具栏 + 翻译 */}
+          <Annotator
+            containerRef={scrollRef}
+            onHighlight={(text, page, rect) => {
+              if (pdfHash) {
+                createAnnotation({
+                  pdf_hash: pdfHash,
+                  annotation_type: 'highlight',
+                  page,
+                  rect: rect ? [rect.left, rect.top, rect.right, rect.bottom] : [0, 0, 0, 0],
+                  selected_text: text,
+                  color: '#FFEB3B',
+                });
+              }
+            }}
+          />
+
           {/* Bottom PDF Toolbar */}
           {pdfFile && (
             <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 'var(--radius-md)', background: 'var(--glass-bg)', backdropFilter: 'blur(var(--glass-blur))', WebkitBackdropFilter: 'blur(var(--glass-blur))', border: '1px solid var(--hairline)', boxShadow: 'var(--glass-shadow)', zIndex: 10 }}>
@@ -297,14 +204,15 @@ export const EditorView: React.FC = () => {
               <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} style={{ color: 'var(--icon-color)', background: 'none', border: 'none', cursor: 'pointer' }}><ZoomOut size={14} /></button>
               <span style={{ fontSize: 11, minWidth: 36, textAlign: 'center', color: 'var(--ink)' }}>{Math.round(scale * 100)}%</span>
               <button onClick={() => setScale(s => Math.min(3, s + 0.1))} style={{ color: 'var(--icon-color)', background: 'none', border: 'none', cursor: 'pointer' }}><ZoomIn size={14} /></button>
-              {annotations.length > 0 && (
-                <>
-                  <div style={{ width: 1, height: 14, background: 'var(--hairline)' }} />
-                  <span style={{ fontSize: 11, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <Highlighter size={12} />{annotations.length}
-                  </span>
-                </>
-              )}
+              <div style={{ width: 1, height: 14, background: 'var(--hairline)' }} />
+              <button
+                onClick={() => setShowBilingual(true)}
+                title="双语对照翻译"
+                style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
+              >
+                <Languages size={14} />
+                <span style={{ fontSize: 11 }}>双语</span>
+              </button>
             </div>
           )}
         </div>
@@ -322,6 +230,28 @@ export const EditorView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Bilingual PDF Viewer Overlay */}
+      {showBilingual && (
+        <BilingualPDFViewer
+          pdfPath={
+            activeTab?.pdfUrl
+              ? activeTab.pdfUrl
+              : activeTab?.file
+                ? (typeof activeTab.file === 'string' ? activeTab.file : '')
+                : ''
+          }
+          proxyUrl={
+            activeTab?.pdfUrl
+              ? (activeTab.pdfUrl.startsWith('/api/') ? activeTab.pdfUrl : `/api/pdf/proxy?url=${encodeURIComponent(activeTab.pdfUrl)}`)
+              : activeTab?.file
+                ? `/api/storage/unified/file?path=${encodeURIComponent(typeof activeTab.file === 'string' ? activeTab.file : '')}`
+                : ''
+          }
+          numPages={numPages}
+          onClose={() => setShowBilingual(false)}
+        />
+      )}
     </div>
   );
 };
@@ -330,7 +260,7 @@ export const EditorView: React.FC = () => {
 
 /** Editor Tab Bar */
 const EditorTabBar: React.FC = () => {
-  const { editorTabs, activeTabId, setActiveTabId, closeTab, fileInputRef } = useApp();
+  const { editorTabs, activeTabId, setActiveTabId, closeTab, openFilePicker } = useApp();
   return (
     <div className="acasight-editor-tabs">
       {editorTabs.map(tab => (
@@ -340,14 +270,14 @@ const EditorTabBar: React.FC = () => {
           <span className="acasight-editor-tab-close" onClick={e => { e.stopPropagation(); closeTab(tab.id); }}><X size={10} /></span>
         </div>
       ))}
-      <div style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--mute)' }} onClick={() => fileInputRef.current?.click()}><Plus size={14} /></div>
+      <div style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--mute)' }} onClick={openFilePicker}><Plus size={14} /></div>
     </div>
   );
 };
 
 /** PDF Empty State */
 const PDFEmptyState: React.FC = () => {
-  const { activeTabId, editorTabs, setPdfFile, fileInputRef } = useApp();
+  const { activeTabId, editorTabs, setPdfFile, openFilePicker } = useApp();
   const activeTab = editorTabs.find(t => t.id === activeTabId);
   if (!activeTab) return null;
 
@@ -365,7 +295,7 @@ const PDFEmptyState: React.FC = () => {
           </div>
         )}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={() => fileInputRef.current?.click()} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><Upload size={14} />上传本地 PDF</button>
+          <button onClick={openFilePicker} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><Upload size={14} />上传本地 PDF</button>
           {activeTab.pdfUrl && (
             <button onClick={() => {
               const proxyUrl = `/api/pdf/proxy?url=${encodeURIComponent(activeTab.pdfUrl!)}`;

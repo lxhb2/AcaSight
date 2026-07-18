@@ -7,7 +7,8 @@ import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.min.css';
 import './index.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.js?url';
+pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -175,7 +175,7 @@ async def create_paper(
     paper_data: PaperCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """创建文献（自动执行11维度拆分）"""
+    """创建文献（维度拆分改为异步后台执行，避免阻塞）"""
     from app.services.paper_code_service import generate_paper_code
     paper = Paper(**paper_data.model_dump())
 
@@ -189,22 +189,32 @@ async def create_paper(
     await db.flush()
     await db.refresh(paper)
 
-    full_text = paper.abstract or ""
-    if paper.pdf_path:
+    # 维度拆分改为异步后台执行，不阻塞创建请求
+    import asyncio
+    async def _background_dimension_extract(paper_id: int, pdf_path: str | None, abstract: str | None):
         try:
-            from app.services.pdf_service import pdf_service
-            text_result = await pdf_service.extract_text(paper.pdf_path)
-            full_text = text_result.get("text", full_text)
+            from app.database import AsyncSessionLocal
+            async with AsyncSessionLocal() as bg_db:
+                full_text = abstract or ""
+                if pdf_path:
+                    try:
+                        from app.services.pdf_service import pdf_service
+                        text_result = await pdf_service.extract_text(pdf_path)
+                        full_text = text_result.get("text", full_text)
+                    except Exception as e:
+                        logger.warning("Background PDF text extraction failed", paper_id=paper_id, error=str(e))
+                if full_text and len(full_text.strip()) >= 50:
+                    try:
+                        await extract_dimensions(paper_id, full_text, bg_db, pdf_path=pdf_path)
+                        logger.info("Background dimension extraction completed", paper_id=paper_id)
+                    except Exception as e:
+                        logger.warning("Background dimension extraction failed", paper_id=paper_id, error=str(e))
         except Exception as e:
-            logger.warning("PDF text extraction failed", paper_id=paper.id, error=str(e))
+            logger.warning("Background task failed", paper_id=paper_id, error=str(e))
 
-    if full_text and len(full_text.strip()) >= 50:
-        try:
-            await extract_dimensions(paper.id, full_text, db)
-        except Exception as e:
-            logger.warning("Auto dimension extraction failed", paper_id=paper.id, error=str(e))
+    asyncio.create_task(_background_dimension_extract(paper.id, paper.pdf_path, paper.abstract))
 
-    logger.info("Paper created with auto-split", paper_id=paper.id, title=paper.title)
+    logger.info("Paper created", paper_id=paper.id, title=paper.title)
     return paper.to_dict()
 
 
@@ -242,7 +252,7 @@ async def batch_import(
                 logger.warning("PDF text extraction failed", paper_id=p.id, error=str(e))
         if full_text and len(full_text.strip()) >= 50:
             try:
-                await extract_dimensions(p.id, full_text, db)
+                await extract_dimensions(p.id, full_text, db, pdf_path=p.pdf_path)
             except Exception as e:
                 logger.warning("Auto dimension extraction failed", paper_id=p.id, error=str(e))
 
@@ -282,7 +292,7 @@ async def batch_split_dimensions(
             continue
 
         try:
-            dims = await extract_dimensions(pid, full_text, db)
+            dims = await extract_dimensions(pid, full_text, db, pdf_path=paper.pdf_path)
             filled = sum(1 for v in dims.values() if v)
             results.append({"paper_id": pid, "status": "ok", "filled": filled})
         except Exception as e:
@@ -608,15 +618,36 @@ async def create_dimensions(
     if paper.pdf_path:
         try:
             from app.services.pdf_service import pdf_service
-            text_result = await pdf_service.extract_text(paper.pdf_path)
+            import tempfile
+            import os
+            pdf_path = paper.pdf_path
+            # 如果是 URL，先下载到临时文件
+            if pdf_path.startswith(("http://", "https://")):
+                import httpx
+                try:
+                    async with httpx.AsyncClient(timeout=30) as client:
+                        resp = await client.get(pdf_path, follow_redirects=True)
+                        if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("application/pdf"):
+                            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                                tmp.write(resp.content)
+                                pdf_path = tmp.name
+                except Exception as e:
+                    logger.warning("Failed to download PDF from URL, using abstract", paper_id=paper_id, url=pdf_path, error=str(e))
+            text_result = await pdf_service.extract_text(pdf_path)
             full_text = text_result.get("text", full_text)
+            # 清理临时文件
+            if pdf_path != paper.pdf_path and os.path.exists(pdf_path):
+                try:
+                    os.unlink(pdf_path)
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning("PDF text extraction failed, using abstract", paper_id=paper_id, error=str(e))
 
     if not full_text or len(full_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="文献内容不足，无法拆分")
 
-    dimensions = await extract_dimensions(paper_id, full_text, db)
+    dimensions = await extract_dimensions(paper_id, full_text, db, pdf_path=paper.pdf_path)
     return {"paper_id": paper_id, "dimensions": dimensions}
 
 
@@ -635,15 +666,36 @@ async def preview_dimensions(
     if paper.pdf_path:
         try:
             from app.services.pdf_service import pdf_service
-            text_result = await pdf_service.extract_text(paper.pdf_path)
+            import tempfile
+            import os
+            pdf_path = paper.pdf_path
+            # 如果是 URL，先下载到临时文件
+            if pdf_path.startswith(("http://", "https://")):
+                import httpx
+                try:
+                    async with httpx.AsyncClient(timeout=30) as client:
+                        resp = await client.get(pdf_path, follow_redirects=True)
+                        if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("application/pdf"):
+                            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                                tmp.write(resp.content)
+                                pdf_path = tmp.name
+                except Exception as e:
+                    logger.warning("Failed to download PDF from URL, using abstract", paper_id=paper_id, url=pdf_path, error=str(e))
+            text_result = await pdf_service.extract_text(pdf_path)
             full_text = text_result.get("text", full_text)
+            # 清理临时文件
+            if pdf_path != paper.pdf_path and os.path.exists(pdf_path):
+                try:
+                    os.unlink(pdf_path)
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning("PDF text extraction failed, using abstract", paper_id=paper_id, error=str(e))
 
     if not full_text or len(full_text.strip()) < 50:
         raise HTTPException(status_code=400, detail="文献内容不足，无法拆分")
 
-    dimensions = await extract_dimensions(paper_id, full_text, db_session=None)
+    dimensions = await extract_dimensions(paper_id, full_text, db_session=None, pdf_path=paper.pdf_path)
     return {"paper_id": paper_id, "dimensions": dimensions, "preview": True}
 
 

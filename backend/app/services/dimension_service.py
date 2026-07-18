@@ -1,11 +1,12 @@
 """
 文献11维度结构化拆分服务
 
-将论文全文通过AI拆分为11个标准化维度，每个维度独立提取、独立入库。
-失败维度不影响其他维度，保证部分可用性。
+优先使用 OpenDataLoader PDF 结构化解析（确定性、快速、无需 AI），
+结构化提取不足时回退到 AI 提示词提取。
 """
 
 import json
+import asyncio
 from typing import Optional
 from app.models.paper_dimensions import PaperDimensions
 from app.services.ai_service import ai_service
@@ -76,14 +77,19 @@ DETAILED_EXTRACTION_PROMPT = """你是学术论文结构化深度分析专家。
 """
 
 
-async def extract_dimensions(paper_id: int, full_text: str, db_session=None) -> dict:
+async def extract_dimensions(paper_id: int, full_text: str, db_session=None, pdf_path: str = None) -> dict:
     """
-    对一篇论文全文执行11维度AI拆分
+    对一篇论文执行11维度拆分
+
+    优先级：
+    1. OpenDataLoader 结构化解析（确定性、快速、无需 AI）
+    2. AI 提示词提取（兜底）
 
     Args:
         paper_id: 论文ID
         full_text: 论文全文
         db_session: 可选的数据库会话（传入则自动持久化）
+        pdf_path: PDF 文件路径（用于结构化解析，可选）
 
     Returns:
         dict: 11维度提取结果，失败的维度为空字符串
@@ -92,6 +98,24 @@ async def extract_dimensions(paper_id: int, full_text: str, db_session=None) -> 
         logger.warning("Text too short for dimension extraction", paper_id=paper_id)
         return _empty_dimensions()
 
+    dimensions = _empty_dimensions()
+
+    # ── 优先尝试结构化解析 ──
+    if pdf_path:
+        try:
+            dimensions = await _extract_structured(pdf_path)
+            filled = sum(1 for v in dimensions.values() if v)
+            if filled >= 3:
+                logger.info("Structured extraction succeeded", paper_id=paper_id, filled=filled)
+                if db_session is not None:
+                    await _save_dimensions(paper_id, dimensions, db_session)
+                return dimensions
+            else:
+                logger.info("Structured extraction sparse, falling back to AI", paper_id=paper_id, filled=filled)
+        except Exception as e:
+            logger.warning("Structured extraction failed, falling back to AI", paper_id=paper_id, error=str(e))
+
+    # ── AI 兜底 ──
     truncated = full_text[:12000]
     prompt = EXTRACTION_PROMPT.format(content=truncated)
 
@@ -107,17 +131,32 @@ async def extract_dimensions(paper_id: int, full_text: str, db_session=None) -> 
         logger.error("AI dimension extraction failed", paper_id=paper_id, error=str(e))
         raw_result = {}
 
-    dimensions = {}
     for key in PaperDimensions.DIMENSION_KEYS:
         dimensions[key] = raw_result.get(key, "") or ""
 
     filled = sum(1 for v in dimensions.values() if v)
-    logger.info("Dimension extraction done", paper_id=paper_id, filled=filled, total=11)
+    logger.info("AI dimension extraction done", paper_id=paper_id, filled=filled, total=11)
 
     if db_session is not None:
         await _save_dimensions(paper_id, dimensions, db_session)
 
     return dimensions
+
+
+async def _extract_structured(pdf_path: str) -> dict:
+    """使用 OpenDataLoader 结构化解析提取维度（在线程中执行以避免阻塞）"""
+    from app.services.structured_pdf_service import (
+        is_available, convert_pdf_to_structured, extract_dimensions_from_structured,
+    )
+    if not is_available():
+        return _empty_dimensions()
+
+    result = await asyncio.to_thread(convert_pdf_to_structured, pdf_path)
+    document = result.get("document", {})
+    if not document:
+        return _empty_dimensions()
+
+    return extract_dimensions_from_structured(document)
 
 
 async def _save_dimensions(paper_id: int, dimensions: dict, db_session) -> PaperDimensions:

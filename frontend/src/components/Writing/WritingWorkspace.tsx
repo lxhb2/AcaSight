@@ -5,7 +5,7 @@ import {
   GraduationCap, Wand2, FileDown,
   Brain, Search, ListTree,
   Lightbulb, ArrowRight, Rocket, LucideIcon,
-  Save,
+  Save, Send, RefreshCw,
 } from 'lucide-react';
 
 import { researchApi, workflowApi, pptApi, writingApi, citationApi, type ResearchDirection, type WritingFlowStatusType, type OutlineNode, type PaperOutline } from '@/services/api';
@@ -13,6 +13,9 @@ import { WritingInterruptDialog, detectInterruptPoint, type InterruptConfig, typ
 import { OutlineEditor } from './OutlineEditor';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useDocumentBridgeStore } from '@/store/documentBridgeStore';
+import { usePanelSwitchStore } from '@/store/panelSwitchStore';
+import { ConvertDialog } from '@/components/Convert/ConvertDialog';
 
 type WritingStep = 'topic' | 'outline' | 'draft' | 'polish' | 'export';
 
@@ -151,6 +154,20 @@ export const WritingWorkspace: React.FC = () => {
   const setWritingDraft = useWorkspaceStore((s) => s.setWritingDraft);
   const syncToServer = useWorkspaceStore((s) => s.syncToServer);
 
+  // 文档桥接 & 面板切换
+  const sendToOffice = useDocumentBridgeStore((s) => s.sendToOffice);
+  const requestPanelSwitch = usePanelSwitchStore((s) => s.requestSwitch);
+
+  // 格式转换对话框
+  const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [convertSource, setConvertSource] = useState('');
+  const [convertFormat, setConvertFormat] = useState<'markdown' | 'docx'>('markdown');
+
+  // 发送到 Office 编辑器（声明在 fullMarkdown 之后赋值）
+  const [sendingToOffice, setSendingToOffice] = useState(false);
+  const handleSendToOfficeRef = useRef<() => void>(() => {});
+  const handleOpenConvertRef = useRef<() => void>(() => {});
+
   const autoSaveData = useMemo(() => ({
     sections,
     outlineData,
@@ -197,6 +214,36 @@ export const WritingWorkspace: React.FC = () => {
     }
     return md.trim();
   }, [outlineData, sections]);
+
+  // ─── 文档桥接：发送到 Office / 格式转换 ───
+  handleSendToOfficeRef.current = () => {
+    const md = fullMarkdown();
+    if (!md.trim()) return;
+    setSendingToOffice(true);
+    const msgId = sendToOffice(md, outlineData?.title || '论文', 'docx');
+    const checkInterval = setInterval(() => {
+      const msg = useDocumentBridgeStore.getState().messages.find(m => m.id === msgId);
+      if (msg?.status === 'completed') {
+        clearInterval(checkInterval);
+        setSendingToOffice(false);
+        requestPanelSwitch('documents');
+      } else if (msg?.status === 'failed') {
+        clearInterval(checkInterval);
+        setSendingToOffice(false);
+        setErrorMsg(msg.error || '发送到 Office 失败');
+      }
+    }, 500);
+    setTimeout(() => { clearInterval(checkInterval); setSendingToOffice(false); }, 30000);
+  };
+
+  handleOpenConvertRef.current = () => {
+    setConvertSource(fullMarkdown());
+    setConvertFormat('markdown');
+    setShowConvertDialog(true);
+  };
+
+  const handleSendToOffice = useCallback(() => handleSendToOfficeRef.current(), []);
+  const handleOpenConvert = useCallback(() => handleOpenConvertRef.current(), []);
 
   // ─── Step 1: 文献搜索 ───
   const handleSearch = useCallback(async () => {
@@ -1068,11 +1115,25 @@ export const WritingWorkspace: React.FC = () => {
 
             {errorMsg && <div style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 12 }}>{errorMsg}</div>}
 
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <button onClick={() => setStep('polish')}
                 style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid var(--border-color)',
                   background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 13 }}>
                 ← 返回润色
+              </button>
+              {/* 发送到 Office 编辑器 */}
+              <button onClick={handleSendToOffice} disabled={sendingToOffice || !fullMarkdown().trim()}
+                style={{ padding: '10px 28px', borderRadius: 8, border: '1px solid #10b981',
+                  background: 'transparent', color: '#10b981', cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 8, opacity: sendingToOffice ? 0.6 : 1 }}>
+                {sendingToOffice ? <><Loader2 size={16} className="spin" /> 发送中...</> : <><Send size={16} /> 发送到 Office 编辑器</>}
+              </button>
+              {/* 格式转换 */}
+              <button onClick={handleOpenConvert}
+                style={{ padding: '10px 28px', borderRadius: 8, border: '1px solid var(--accent, #6366f1)',
+                  background: 'transparent', color: 'var(--accent, #6366f1)', cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 8 }}>
+                <RefreshCw size={16} /> 格式转换
               </button>
               <button onClick={handleExport} disabled={loading || !selectedTemplate}
                 style={{ padding: '10px 28px', borderRadius: 8, border: 'none',
@@ -1146,6 +1207,14 @@ export const WritingWorkspace: React.FC = () => {
           onCancel={handleInterruptCancel}
         />
       )}
+
+      {/* 格式转换对话框 */}
+      <ConvertDialog
+        visible={showConvertDialog}
+        onClose={() => setShowConvertDialog(false)}
+        sourceContent={convertSource}
+        sourceType={convertFormat}
+      />
     </div>
   );
 };

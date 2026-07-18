@@ -1,0 +1,24 @@
+{
+  "name": "acasight",
+  "version": "1.0.0",
+  "description": "> 全能型学术智能体应用 - 为科研人员提供一站式学术工作平台",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:win": "tauri build --bundles nsis"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/lxhb1/AcaSight.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2"
+  }
+}

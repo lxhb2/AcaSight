@@ -18,6 +18,11 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     logger.info("Starting AcaSight backend...")
 
+    # 安全检查: JWT_SECRET 是否已配置
+    from app.config import settings
+    if not settings.JWT_SECRET:
+        logger.warning("JWT_SECRET is not set! Please configure JWT_SECRET in environment variables for production use.")
+
     # 确保关键子目录存在
     import os
     data_dirs = [
@@ -36,6 +41,8 @@ async def lifespan(app: FastAPI):
         from app.models.paper import Paper
         from app.models.annotation import Annotation
         from app.models.paper_dimensions import PaperDimensions
+        from app.models.document import Document, DocumentVersion
+        from app.models.experiment import Experiment, ExperimentEntry, ExperimentLink
         await init_db()
         app.state.db_ready = True
     except Exception as e:
@@ -133,9 +140,15 @@ except Exception as e:
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Unhandled error", error=str(exc), path=request.url.path, method=request.method)
+    from app.config import settings
+    if settings.DEBUG:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(exc), "path": request.url.path},
+        )
     return JSONResponse(
         status_code=500,
-        content={"success": False, "error": str(exc), "path": request.url.path},
+        content={"success": False, "error": "Internal Server Error"},
     )
 
 
@@ -368,10 +381,13 @@ try:
 except Exception as e:
     logger.warning(f"Agent router load failed: {e}")
 
-# Chapter H: 引用图谱路由
+# Feature 6.7: 知识图谱可视化路由 (含原有引用图谱功能)
 try:
     from app.routers import knowledge_graph
+    # 旧前缀兼容 (GraphView 等组件使用)
     app.include_router(knowledge_graph.router, prefix="/api/knowledge", tags=["引用图谱"])
+    # 新前缀 (KnowledgeGraphPanel 使用)
+    app.include_router(knowledge_graph.router, prefix="/api/knowledge-graph", tags=["知识图谱可视化"])
     logger.info("Knowledge graph router loaded")
 except Exception as e:
     logger.warning(f"Knowledge graph router load failed: {e}")
@@ -494,6 +510,22 @@ try:
 except Exception as e:
     logger.warning(f"Literature table router load failed: {e}")
 
+# Phase 2: 文档管理路由 (OnlyOffice 集成)
+try:
+    from app.routers import documents
+    app.include_router(documents.router, prefix="/api/documents", tags=["文档管理"])
+    logger.info("Documents router loaded")
+except Exception as e:
+    logger.warning(f"Documents router load failed: {e}")
+
+# Phase 2: 格式转换路由
+try:
+    from app.routers import convert
+    app.include_router(convert.router, prefix="/api/convert", tags=["格式转换"])
+    logger.info("Convert router loaded")
+except Exception as e:
+    logger.warning(f"Convert router load failed: {e}")
+
 # 文献综述MVP路由
 try:
     from app.routers import literature_review
@@ -517,6 +549,46 @@ try:
     logger.info("Plot router loaded")
 except Exception as e:
     logger.warning(f"Plot router load failed: {e}")
+
+# Feature 6.5: LaTeX 编辑器路由
+try:
+    from app.routers import latex
+    app.include_router(latex.router, prefix="/api/latex", tags=["LaTeX编辑器"])
+    logger.info("LaTeX router loaded")
+except Exception as e:
+    logger.warning(f"LaTeX router load failed: {e}")
+
+# Feature 6.6: 实验笔记本路由
+try:
+    from app.routers import experiment
+    app.include_router(experiment.router, prefix="/api/experiments", tags=["实验笔记本"])
+    logger.info("Experiment router loaded")
+except Exception as e:
+    logger.warning(f"Experiment router load failed: {e}")
+
+# 6.3: 批量文献处理路由
+try:
+    from app.routers import literature_batch
+    app.include_router(literature_batch.router, prefix="/api/literature-batch", tags=["批量文献处理"])
+    logger.info("Literature batch router loaded")
+except Exception as e:
+    logger.warning(f"Literature batch router load failed: {e}")
+
+# 6.4: 论文查重路由
+try:
+    from app.routers import plagiarism
+    app.include_router(plagiarism.router, prefix="/api/plagiarism", tags=["论文查重"])
+    logger.info("Plagiarism router loaded")
+except Exception as e:
+    logger.warning(f"Plagiarism router load failed: {e}")
+
+# 6.5: 翻译引擎路由
+try:
+    from app.routers import translate
+    app.include_router(translate.router, prefix="/api/translate", tags=["翻译引擎"])
+    logger.info("Translate router loaded")
+except Exception as e:
+    logger.warning(f"Translate router load failed: {e}")
 
 # ── 前端静态文件 ──
 from pathlib import Path

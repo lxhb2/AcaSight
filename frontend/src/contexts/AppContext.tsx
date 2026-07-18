@@ -8,6 +8,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { pdfApi, aiApi, zoteroApi, annotationsApi } from '@/services/api';
 import type { ChatMessage, AnnotationItem } from '@/services/api';
+import { openFile as tauriOpenFile, isTauri } from '@/lib/tauri-adapter';
 
 export interface ZoteroCollection {
   key: string;
@@ -179,8 +180,7 @@ interface AppContextType {
   setPendingNoteContent: (v: string) => void;
 
   // ---- File Upload ----
-  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  openFilePicker: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -197,10 +197,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ---- Editor Tabs ----
   const [editorTabs, setEditorTabs] = useState<EditorTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [openPanels, setOpenPanels] = useState<string[]>(['file-explorer', 'editor']);
+  const [openPanels, setOpenPanels] = useState<string[]>([]);
 
   // ---- PDF ----
   const [pdfFile, setPdfFile] = useState<string | File | null>(null);
+  const prevPdfFileRef = useRef<string | File | null>(null);
+
+  // Revoke old blob URL when pdfFile changes to prevent memory leaks
+  useEffect(() => {
+    const prev = prevPdfFileRef.current;
+    if (typeof prev === 'string' && prev.startsWith('blob:')) {
+      URL.revokeObjectURL(prev);
+    }
+    prevPdfFileRef.current = pdfFile;
+  }, [pdfFile]);
   const [pdfFullText, setPdfFullText] = useState('');
   const pdfDocRef = useRef<any>(null);
   const pdfTextPagesRef = useRef<Set<number>>(new Set());
@@ -249,7 +259,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pendingNoteContent, setPendingNoteContent] = useState('');
 
   // ---- File Upload ----
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const openFilePicker = useCallback(async () => {
+    try {
+      const files = await tauriOpenFile({
+        multiple: false,
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+        title: '选择 PDF 文件',
+      });
+      if (!files || files.length === 0) return;
+
+      const { name, path, content } = files[0];
+      const id = Date.now().toString();
+
+      // 在 Tauri 环境中，path 是本地绝对路径，可直接构建 proxy URL
+      // 在浏览器环境中，path 只是文件名，需要上传到后端
+      if (isTauri() && path && !path.startsWith('blob:')) {
+        // 桌面端：优先使用 content (Uint8Array) 直接渲染，避免 HTTP 往返
+        // 同时保存 proxyUrl 供后端 API（标注、文本提取等）使用
+        const proxyUrl = `/api/pdf/proxy?url=${encodeURIComponent(path)}`;
+        const tab: EditorTab = { id, name, type: 'pdf', file: path, pdfUrl: proxyUrl };
+        setEditorTabs(prev => [...prev, tab]);
+        setActiveTabId(id);
+        setCurrentPage(1);
+        setOpenPanels(p => p.includes('editor') ? p : [...p, 'editor']);
+        // 直接用 Uint8Array 渲染 PDF，不经过 HTTP proxy
+        if (content) {
+          const blob = new Blob([content as BlobPart], { type: 'application/pdf' });
+          setPdfFile(URL.createObjectURL(blob));
+        } else {
+          setPdfFile(proxyUrl);
+        }
+      } else {
+        // 浏览器环境：content 是 Uint8Array，需要上传到后端
+        const fileObj = new File([content as BlobPart], name, { type: 'application/pdf' });
+        try {
+          const uploadRes = await pdfApi.upload(fileObj);
+          const proxyUrl = `/api/pdf/proxy?url=${encodeURIComponent(uploadRes.path)}`;
+          const tab: EditorTab = { id, name, type: 'pdf', file: fileObj, pdfUrl: proxyUrl };
+          setEditorTabs(prev => [...prev, tab]);
+          setActiveTabId(id);
+          setCurrentPage(1);
+          setOpenPanels(p => p.includes('editor') ? p : [...p, 'editor']);
+        } catch {
+          // 上传失败 → blob URL 兜底（仅本地渲染可用，API 功能不可用）
+          const blobUrl = URL.createObjectURL(fileObj);
+          const tab: EditorTab = { id, name, type: 'pdf', file: fileObj, pdfUrl: blobUrl };
+          setEditorTabs(prev => [...prev, tab]);
+          setActiveTabId(id);
+          setCurrentPage(1);
+          setOpenPanels(p => p.includes('editor') ? p : [...p, 'editor']);
+        }
+      }
+    } catch (err) {
+      console.error('File picker failed:', err);
+    }
+  }, []);
 
   // ---- Derived ----
   const activeFile = editorTabs.find(t => t.id === activeTabId)?.name || '';
@@ -292,9 +356,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (activeTab?.type === 'pdf') {
       // 优先使用 pdfUrl（保证是 string，避免 File 对象污染 API 调用）
       if (activeTab.pdfUrl) {
-        // 已经是 proxy URL 则直接用，否则包裹一层
-        const isProxyUrl = typeof activeTab.pdfUrl === 'string' && activeTab.pdfUrl.startsWith('/api/pdf/proxy');
-        setPdfFile(isProxyUrl ? activeTab.pdfUrl : `/api/pdf/proxy?url=${encodeURIComponent(activeTab.pdfUrl)}`);
+        const url = typeof activeTab.pdfUrl === 'string' ? activeTab.pdfUrl : '';
+        // 已经是 /api/ 开头的完整 URL（proxy、storage 等）直接用
+        // 本地绝对路径（桌面端）需要包裹 proxy
+        if (url.startsWith('/api/')) {
+          setPdfFile(url);
+        } else if (url.startsWith('blob:')) {
+          setPdfFile(url);
+        } else {
+          // 本地绝对路径（桌面端特征）→ 包裹 proxy
+          setPdfFile(`/api/pdf/proxy?url=${encodeURIComponent(url)}`);
+        }
       } else if (activeTab.file && !(activeTab.file instanceof File)) {
         // 旧逻辑兼容：file 是字符串路径
         setPdfFile(activeTab.file as string);
@@ -316,12 +388,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPdfFullText('');
 
     // 后端 PyMuPDF 全文提取（替代前端 onRenderSuccess 逐页提取）
-    // 必须确保 pdfFile 是有效 URL 字符串，跳过 File 对象和 blob URL
-    if (pdfFile && typeof pdfFile === 'string' && !pdfFile.startsWith('blob:')) {
-      const extractUrl = pdfFile;
+    // blob URL 用于渲染，但后端 API 需要用 proxy URL
+    const apiPdfUrl = activeTab?.pdfUrl && typeof activeTab.pdfUrl === 'string' && activeTab.pdfUrl.startsWith('/api/')
+      ? activeTab.pdfUrl
+      : (pdfFile && typeof pdfFile === 'string' && !pdfFile.startsWith('blob:') ? pdfFile : null);
+
+    if (apiPdfUrl) {
       (async () => {
         try {
-          const data = await pdfApi.extractText(extractUrl, 50000);
+          const data = await pdfApi.extractText(apiPdfUrl, 50000);
           if (data.text) {
             setPdfFullText(data.text);
             return;
@@ -331,11 +406,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       })();
     }
-  }, [pdfFile]);
+  }, [pdfFile, activeTab?.pdfUrl]);
 
   // Load outline + hash + annotations when PDF file changes
   useEffect(() => {
-    if (!pdfFile || typeof pdfFile !== 'string' || pdfFile.startsWith('blob:')) {
+    // blob URL 用于渲染，但后端 API 需要用 proxy URL
+    const apiPdfUrl = activeTab?.pdfUrl && typeof activeTab.pdfUrl === 'string' && activeTab.pdfUrl.startsWith('/api/')
+      ? activeTab.pdfUrl
+      : (pdfFile && typeof pdfFile === 'string' && !pdfFile.startsWith('blob:') ? pdfFile : null);
+
+    if (!apiPdfUrl) {
       setOutline([]);
       setPdfHash('');
       setAnnotations([]);
@@ -345,7 +425,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const loadPdfMeta = async () => {
       try {
         // Get hash for annotation association
-        const hashRes = await pdfApi.hash(pdfFile);
+        const hashRes = await pdfApi.hash(apiPdfUrl);
         setPdfHash(hashRes.hash);
         // Load annotations for this PDF
         await loadAnnotations(hashRes.hash);
@@ -354,7 +434,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       try {
         // Try to load TOC from backend
-        const path = pdfFile.replace('/api/pdf/proxy?url=', '');
+        const path = apiPdfUrl.replace('/api/pdf/proxy?url=', '');
         const decodedPath = decodeURIComponent(path);
         const tocRes = await pdfApi.toc(decodedPath);
         setOutline(tocRes.toc || []);
@@ -434,6 +514,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setEditorTabs(prev => {
       const next = prev.filter(t => t.id !== tabId);
       if (activeTabId === tabId) setActiveTabId(next.length > 0 ? next[next.length - 1].id : null);
+      // 所有标签页都关闭时，移除 editor 面板
+      if (next.length === 0) {
+        setOpenPanels(p => p.filter(id => id !== 'editor'));
+      }
       return next;
     });
   }, [activeTabId]);
@@ -509,33 +593,6 @@ ${pdfFullText.slice(0, 12000)}
     setNotes(prev => prev.filter(n => n.id !== id));
   }, []);
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const id = Date.now().toString();
-    e.target.value = ''; // Reset input immediately
-
-    // 先上传到后端获取持久化路径，避免 File 对象泄漏到 pdfFile 导致 "[object File]" 错误
-    try {
-      const uploadRes = await pdfApi.upload(file);
-      // 用服务端绝对路径构建 proxy URL，PDF.js 和所有 API 端点均可直接使用
-      const proxyUrl = `/api/pdf/proxy?url=${encodeURIComponent(uploadRes.path)}`;
-      const tab: EditorTab = { id, name: file.name, type: 'pdf', file, pdfUrl: proxyUrl };
-      setEditorTabs(prev => [...prev, tab]);
-      setActiveTabId(id);
-      setCurrentPage(1);
-      setOpenPanels(p => p.includes('editor') ? p : [...p, 'editor']);
-    } catch {
-      // 上传失败 → blob URL 兜底（仅本地渲染可用，API 功能不可用）
-      const blobUrl = URL.createObjectURL(file);
-      const tab: EditorTab = { id, name: file.name, type: 'pdf', file, pdfUrl: blobUrl };
-      setEditorTabs(prev => [...prev, tab]);
-      setActiveTabId(id);
-      setCurrentPage(1);
-      setOpenPanels(p => p.includes('editor') ? p : [...p, 'editor']);
-    }
-  }, []);
-
   // ==================== Context Value ====================
 
   const value = useMemo<AppContextType>(() => ({
@@ -557,7 +614,7 @@ ${pdfFullText.slice(0, 12000)}
     pdfHash, setPdfHash, annotations, setAnnotations, loadAnnotations, createAnnotation, deleteAnnotation, annotationTool, setAnnotationTool, annotationColor, setAnnotationColor,
     outline, setOutline,
     pendingNoteContent, setPendingNoteContent,
-    handleFileUpload, fileInputRef,
+    openFilePicker,
   }), [
     editorTabs, activeTabId, openFile, closeTab,
     pdfFile, pdfFullText,
@@ -572,12 +629,22 @@ ${pdfFullText.slice(0, 12000)}
     pdfHash, annotations, loadAnnotations, createAnnotation, deleteAnnotation, annotationTool, annotationColor,
     outline,
     pendingNoteContent,
-    handleFileUpload,
+    openFilePicker,
   ]);
 
   const panelValue = useMemo<PanelContextType>(() => ({
     openPanels, setOpenPanels, togglePanel, closePanel,
   }), [openPanels, togglePanel, closePanel]);
+
+  // 暴露翻译状态到 window，供 AnnotationOverlay 等组件调用
+  useEffect(() => {
+    (window as any).__acasight_app_state = {
+      setShowFloatingTranslate,
+      setFloatTranslateText,
+      setFloatTranslatePos,
+    };
+    return () => { delete (window as any).__acasight_app_state; };
+  }, [setShowFloatingTranslate, setFloatTranslateText, setFloatTranslatePos]);
 
   return (
     <PanelContext.Provider value={panelValue}>

@@ -12,10 +12,11 @@ import {
   FileText, Loader2, Star,
   Bookmark, Trash2, X, MoreHorizontal, Plus,
 } from 'lucide-react';
-import { papersApi, zoteroApi } from '@/services/api';
+import { papersApi, zoteroApi, pdfApi } from '@/services/api';
 import type { PaperItem, TagInfo } from '@/services/api';
 import { useApp } from '@/contexts/AppContext';
 import { type ZoteroItem } from '@/contexts/AppContext';
+import { openFile as tauriOpenFile } from '@/lib/tauri-adapter';
 
 type SortField = 'created_at' | 'title' | 'year' | 'citation_count';
 
@@ -39,21 +40,22 @@ interface ContextMenuState {
 
 export const FileExplorerView: React.FC = () => {
   const {
-    openFile, fileInputRef,
+    openFile,
     zoteroConnected, setZoteroConnected,
     setZoteroCollections,
     zoteroItems,
   } = useApp();
 
   const [papers, setPapers] = useState<PaperItem[]>([]);
+  const [importing, setImporting] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [activeStatus, setActiveStatus] = useState<string | null>(null);
+  const [activeStatus] = useState<string | null>(null);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [tags, setTags] = useState<TagInfo[]>([]);
-  const [sortBy, setSortBy] = useState<SortField>('created_at');
+  const [sortBy] = useState<SortField>('created_at');
   const [page, setPage] = useState(1);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [selectedPaper, setSelectedPaper] = useState<PaperItem | null>(null);
@@ -89,6 +91,55 @@ export const FileExplorerView: React.FC = () => {
       setTags(res.tags);
     } catch { /* ignore */ }
   }, []);
+
+  /** 导入 PDF 并创建 Paper 记录 */
+  const handleImportPdf = useCallback(async () => {
+    setImporting(true);
+    try {
+      const files = await tauriOpenFile({
+        multiple: true,
+        filters: [{ name: 'PDF', extensions: ['pdf'] }],
+        title: '选择 PDF 文件',
+      });
+      if (!files || files.length === 0) { setImporting(false); return; }
+
+      let firstUploadPath: string | null = null;
+
+      for (const f of files) {
+        try {
+          // 上传 PDF 到后端存储
+          const fileObj = new File([f.content as BlobPart], f.name, { type: 'application/pdf' });
+          const uploadRes = await pdfApi.upload(fileObj);
+
+          if (!firstUploadPath) firstUploadPath = uploadRes.path;
+
+          // 创建 Paper 记录
+          await papersApi.create({
+            title: f.name.replace(/\.pdf$/i, ''),
+            pdf_path: uploadRes.path,
+            file_size: uploadRes.size,
+            tags: ['imported'],
+          });
+        } catch (err) {
+          console.error(`导入 ${f.name} 失败:`, err);
+        }
+      }
+
+      // 刷新列表
+      loadPapers();
+      loadTags();
+
+      // 打开第一个 PDF
+      if (firstUploadPath) {
+        const proxyUrl = `/api/pdf/proxy?url=${encodeURIComponent(firstUploadPath)}`;
+        openFile(files[0].name, 'pdf', { pdfUrl: proxyUrl });
+      }
+    } catch (err) {
+      console.error('导入 PDF 失败:', err);
+    } finally {
+      setImporting(false);
+    }
+  }, [loadPapers, loadTags, openFile]);
 
   useEffect(() => { loadPapers(); }, [loadPapers]);
   useEffect(() => { loadTags(); }, [loadTags]);
@@ -216,8 +267,8 @@ export const FileExplorerView: React.FC = () => {
     <>
       {/* 工具栏 */}
       <div className="acasight-tree-toolbar">
-        <button className="acasight-tree-btn" title="导入 PDF" onClick={() => fileInputRef.current?.click()}>
-          <Upload size={14} />
+        <button className="acasight-tree-btn" title="导入 PDF" onClick={handleImportPdf} disabled={importing}>
+          {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         </button>
         <button className="acasight-tree-btn" title="新建文件夹"><FolderPlus size={14} /></button>
         <button className="acasight-tree-btn" title="新建笔记"><FilePlus size={14} /></button>
@@ -268,27 +319,6 @@ export const FileExplorerView: React.FC = () => {
         </div>
       )}
 
-      {/* 阅读状态筛选 */}
-      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--hairline)', display: 'flex', gap: 4, fontSize: 10 }}>
-        {Object.entries(READ_STATUS_LABELS).map(([key, label]) => (
-          <button
-            key={key}
-            style={{
-              padding: '2px 6px',
-              borderRadius: 3,
-              border: 'none',
-              background: activeStatus === key ? 'var(--accent)' : 'transparent',
-              color: activeStatus === key ? '#fff' : READ_STATUS_COLORS[key],
-              cursor: 'pointer',
-              fontSize: 10,
-            }}
-            onClick={() => setActiveStatus(activeStatus === key ? null : key)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {/* Zotero 连接状态 */}
       {zoteroConnected && (
         <div style={{ padding: '4px 8px', background: 'var(--accent-bg-soft)', borderBottom: '1px solid var(--hairline)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
@@ -320,28 +350,6 @@ export const FileExplorerView: React.FC = () => {
           >重试</button>
         </div>
       )}
-
-      {/* 排序 */}
-      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--hairline)', display: 'flex', gap: 4, fontSize: 10, color: 'var(--mute)' }}>
-        <span>排序:</span>
-        {([['created_at', '时间'], ['title', '标题'], ['year', '年份'], ['citation_count', '引用']] as [SortField, string][]).map(([field, label]) => (
-          <button
-            key={field}
-            style={{
-              padding: '1px 4px',
-              borderRadius: 2,
-              border: 'none',
-              background: sortBy === field ? 'var(--accent-bg-soft)' : 'transparent',
-              color: sortBy === field ? 'var(--accent)' : 'var(--mute)',
-              cursor: 'pointer',
-              fontSize: 10,
-            }}
-            onClick={() => setSortBy(field)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
 
       {/* 文献列表 */}
       <div ref={containerRef} style={{ flex: 1, overflowY: 'auto' }}>

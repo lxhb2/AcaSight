@@ -1,0 +1,46 @@
+# AcaSight Phase 2 — OnlyOffice Document Server 部署配置
+#
+# 使用方法:
+#   cd backend/docker
+#   docker-compose up -d
+#
+# 环境变量说明:
+#   ONLYOFFICE_JWT_SECRET  — JWT 签名密钥（生产环境必须设置）
+#   SERVER_BASE_URL        — AcaSight 后端的外部可达地址（供 OnlyOffice 回调）
+#
+# 注意: OnlyOffice Document Server 首次启动较慢（约 2-5 分钟），请耐心等待。
+
+version: "3.8"
+
+services:
+  onlyoffice-documentserver:
+    image: onlyoffice/documentserver:8.2
+    container_name: acasight-onlyoffice
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      # JWT 安全配置（生产环境务必修改）
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-acasight_dev_jwt_secret_2024}
+      - JWT_HEADER=Authorization
+      # 允许的来源（CORS）
+      - ALLOW_META_IP_ADDRESS=true
+      - ALLOW_PRIVATE_IP_ADDRESS=true
+    volumes:
+      - onlyoffice_logs:/var/log/onlyoffice
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_lib:/var/lib/onlyoffice
+      - onlyoffice_db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  onlyoffice_logs:
+  onlyoffice_data:
+  onlyoffice_lib:
+  onlyoffice_db:

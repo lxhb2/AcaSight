@@ -23,7 +23,7 @@ logger = structlog.get_logger()
 class UnifiedStorageService:
     """全类型数据统一存储管理器"""
 
-    CATEGORIES = ["images", "data", "reports", "charts", "chart_products", "chart_raw", "templates", "other"]
+    CATEGORIES = ["images", "data", "reports", "charts", "chart_products", "chart_raw", "templates", "other", "pdf", "image", "svg", "doc"]
 
     def __init__(self, base_dir: str = None):
         if base_dir is None:

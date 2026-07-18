@@ -2,6 +2,7 @@
 AcaSight 配置管理
 """
 
+import os
 from typing import List
 from pydantic_settings import BaseSettings
 from pydantic import Field
@@ -60,7 +61,7 @@ class Settings(BaseSettings):
     
     # 搜索
     SEMANTIC_SCHOLAR_API_KEY: str = Field(default="", env="SEMANTIC_SCHOLAR_API_KEY")
-    CORE_API_KEY: str = Field(default="kSbRLqWtrlBE4uaNsQMjpAO2gD8nz569", env="CORE_API_KEY")
+    CORE_API_KEY: str = os.getenv("CORE_API_KEY", "")
     
     # 文件存储
     UPLOAD_DIR: str = Field(default="./data/uploads", env="UPLOAD_DIR")
@@ -70,7 +71,7 @@ class Settings(BaseSettings):
     ZOTERO_DB_PATH: str = Field(default="", env="ZOTERO_DB_PATH")
     
     # JWT
-    JWT_SECRET: str = Field(default="your-secret-key", env="JWT_SECRET")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "")
     JWT_ALGORITHM: str = Field(default="HS256", env="JWT_ALGORITHM")
     JWT_EXPIRE_DAYS: int = Field(default=7, env="JWT_EXPIRE_DAYS")
     

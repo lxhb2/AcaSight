@@ -5,6 +5,7 @@ import { plotApi } from '@/services/plotService';
 import { PlotSchemaRenderer } from '@/components/Charts/Common/PlotSchemaRenderer';
 import { PDFCardManager } from './PDFCardManager';
 import { XRDConfigPanel } from './XRDConfigPanel';
+import { openTextFile, saveFile } from '@/lib/tauri-adapter';
 
 export const XRDStackedChart: React.FC = () => {
   const {
@@ -15,14 +16,14 @@ export const XRDStackedChart: React.FC = () => {
   } = usePlotStore();
 
   const [error, setError] = useState('');
-  const xrdFileRef = React.useRef<HTMLInputElement>(null);
 
   // Parse XRD data file (CSV/TXT)
-  const handleXRDFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleXRDFile = useCallback(async () => {
+    const files = await openTextFile({ filters: [{ name: 'XRD Data', extensions: ['csv', 'txt', 'tsv', 'dat', 'xy', 'asc'] }] });
+    if (!files.length) return;
+    const file = files[0];
     try {
-      const text = await file.text();
+      const text = file.content;
       const lines = text.trim().split('\n');
       const twoTheta: number[] = [];
       const intensity: number[] = [];
@@ -51,7 +52,6 @@ export const XRDStackedChart: React.FC = () => {
     } catch (err) {
       setError('文件读取失败: ' + (err instanceof Error ? err.message : String(err)));
     }
-    e.target.value = '';
   }, [addXrdDataset, xrdDatasets.length]);
 
   // Generate chart
@@ -87,10 +87,20 @@ export const XRDStackedChart: React.FC = () => {
     try {
       const result = await plotApi.exportPlot(plotSchema, format);
       const url = result.image_url;
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `xrd_stacked.${format}`;
-      a.click();
+      // Convert data URL to Uint8Array for saveFile
+      if (url.startsWith('data:')) {
+        const base64 = url.split(',')[1];
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        await saveFile(bytes, { filters: [{ name: format.toUpperCase(), extensions: [format] }], defaultPath: 'xrd_stacked.' + format });
+      } else {
+        // Fallback for URL-based images
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'xrd_stacked.' + format;
+        a.click();
+      }
     } catch (err) {
       setError('导出失败: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -111,10 +121,9 @@ export const XRDStackedChart: React.FC = () => {
         {/* Import XRD data */}
         <div style={{ padding: 8, borderBottom: '1px solid var(--border-color)' }}>
           <div style={{ fontSize: 11, color: 'var(--mute)', marginBottom: 6 }}>XRD 数据</div>
-          <button onClick={() => xrdFileRef.current?.click()} style={{ width: '100%', padding: '6px 0', borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          <button onClick={handleXRDFile} style={{ width: '100%', padding: '6px 0', borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <Upload size={12} /> 导入 XRD 数据
           </button>
-          <input ref={xrdFileRef} type="file" accept=".csv,.txt,.tsv,.dat,.xy,.asc" onChange={handleXRDFile} style={{ display: 'none' }} />
           <div style={{ fontSize: 10, color: 'var(--mute)', marginTop: 4 }}>支持 CSV/TXT/DAT (2θ, Intensity)</div>
 
           {/* Dataset list */}

@@ -53,6 +53,12 @@ const DIMENSION_COLORS: Record<string, string> = {
 type DimensionSource = 'none' | 'database' | 'preview';
 type DisplayMode = 'single' | 'compare';
 
+type DimColumn = {
+  key: string;
+  label: string;
+  source: string;
+};
+
 const DEFAULT_COLUMNS = [
   { key: 'title', label: '标题', source: 'metadata' },
   { key: 'authors', label: '作者', source: 'metadata' },
@@ -80,31 +86,38 @@ export const DimensionDisplayView: React.FC = () => {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const [columns, setColumns] = useState(DEFAULT_COLUMNS);
+  const [columns, setColumns] = useState<DimColumn[]>(DEFAULT_COLUMNS);
   const [tableData, setTableData] = useState<Array<Record<string, unknown>> | null>(null);
-  const [tableColumns, setTableColumns] = useState(DEFAULT_COLUMNS);
+  const [tableColumns, setTableColumns] = useState<DimColumn[]>(DEFAULT_COLUMNS);
   const [generating, setGenerating] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [showAddColumn, setShowAddColumn] = useState(false);
+
+  const initRef = useRef(false);
+
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await papersApi.list({ page_size: 100, sort_by: 'created_at', sort_order: 'desc' });
+        if (!cancelled) setPapers(res.items || []);
+      } catch {
+        if (!cancelled) setPapers([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await papersApi.list({ page_size: 100, sort_by: 'created_at', sort_order: 'desc' });
-        if (!cancelled && mountedRef.current) setPapers(res.items || []);
-      } catch {
-        if (!cancelled && mountedRef.current) setPapers([]);
-      } finally {
-        if (!cancelled && mountedRef.current) setLoading(false);
-      }
-    };
-    load();
-    return () => { cancelled = true; mountedRef.current = false; };
+    return () => { mountedRef.current = false; };
   }, []);
 
   const loadDimensionsFromDB = useCallback(async (paperId: number) => {

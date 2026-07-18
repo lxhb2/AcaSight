@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Upload, Waves } from 'lucide-react';
 import { plotApi } from '@/services/plotService';
 import { PlotSchemaRenderer } from '@/components/Charts/Common/PlotSchemaRenderer';
+import { openTextFile } from '@/lib/tauri-adapter';
 
 interface SpectrumData {
   x: number[];
@@ -9,7 +10,11 @@ interface SpectrumData {
   label: string;
 }
 
-export const SpectrumProcessor: React.FC = () => {
+interface SpectrumProcessorProps {
+  defaultSpectrumType?: string;
+}
+
+export const SpectrumProcessor: React.FC<SpectrumProcessorProps> = ({ defaultSpectrumType }) => {
   const [spectrumData, setSpectrumData] = useState<SpectrumData | null>(null);
   const [processedY, setProcessedY] = useState<number[] | null>(null);
   const [baseline, setBaseline] = useState<number[] | null>(null);
@@ -24,15 +29,18 @@ export const SpectrumProcessor: React.FC = () => {
   const [baselineMethod, setBaselineMethod] = useState('als');
   const [smoothMethod, setSmoothMethod] = useState('savgol');
   const [peakType, setPeakType] = useState('pvoigt');
-  const [spectrumType, setSpectrumType] = useState<'raman' | 'xps' | 'ftir'>('raman');
+  const [spectrumType, setSpectrumType] = useState<'raman' | 'xps' | 'ftir'>(() => {
+    if (defaultSpectrumType === 'xps') return 'xps';
+    if (defaultSpectrumType === 'ftir') return 'ftir';
+    return 'raman';
+  });
 
-  const fileRef = React.useRef<HTMLInputElement>(null);
-
-  const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileImport = useCallback(async () => {
+    const files = await openTextFile({ filters: [{ name: 'Spectrum Data', extensions: ['csv', 'txt', 'tsv', 'dat', 'spc', 'jdx'] }] });
+    if (!files.length) return;
+    const file = files[0];
     try {
-      const text = await file.text();
+      const text = file.content;
       const lines = text.trim().split('\n');
       const x: number[] = [];
       const y: number[] = [];
@@ -56,7 +64,6 @@ export const SpectrumProcessor: React.FC = () => {
       setStep('baseline');
       setError('');
     } catch (err) { setError('文件读取失败'); }
-    e.target.value = '';
   }, []);
 
   const handleBaseline = useCallback(async () => {
@@ -174,10 +181,9 @@ export const SpectrumProcessor: React.FC = () => {
 
         {/* Import */}
         <div style={{ padding: 8, borderBottom: '1px solid var(--border-color)' }}>
-          <button onClick={() => fileRef.current?.click()} style={{ width: '100%', padding: '6px 0', borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          <button onClick={handleFileImport} style={{ width: '100%', padding: '6px 0', borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <Upload size={12} /> 导入光谱数据
           </button>
-          <input ref={fileRef} type="file" accept=".csv,.txt,.tsv,.dat,.spc,.jdx" onChange={handleFileImport} style={{ display: 'none' }} />
           {spectrumData && <div style={{ marginTop: 4, fontSize: 10, color: 'var(--accent)' }}>{spectrumData.label} ({spectrumData.x.length}pts)</div>}
         </div>
 

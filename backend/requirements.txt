@@ -34,6 +34,15 @@ openai>=1.3.6
 pymupdf>=1.23.7        # fitz，文本提取/渲染/水印
 pypdf>=3.0.1             # PDF 合并/拆分/旋转
 
+# ===== PDF 翻译（BabelDOC）=====
+babeldoc>=0.6.3          # PDF 全文翻译与双语对照（可选，需 OpenAI 兼容 API）
+
+# ===== 内嵌翻译引擎（STranslate 风格）=====
+# Google | Microsoft | MyMemory | AI 并发调用
+# 纯 HTTP 调用，零模型依赖，零 API Key
+httpx>=0.25.0              # 异步 HTTP 客户端（已在 Web 框架部分安装）
+peewee>=3.17.0             # 翻译缓存 SQLite ORM
+
 # ===== 数据处理 =====
 pandas>=2.1.3
 numpy>=1.26.2
@@ -59,8 +68,8 @@ python-dotenv>=1.0.0
 pydantic>=2.5.2
 pydantic-settings>=2.1.0
 
-# ===== 认证（可选）=====
-# python-jose[cryptography]>=3.3.0
+# ===== 认证 =====
+python-jose[cryptography]>=3.3.0
 # passlib[bcrypt]>=1.7.4
 
 # ===== 测试 =====
@@ -89,6 +98,12 @@ orjson>=3.9.10
 
 # ===== Markdown =====
 markdown>=3.5.1
+
+# ===== 文档转换 =====
+pypandoc>=1.11
+
+# ===== 异步 HTTP =====
+aiohttp>=3.9.0
 
 # ===== LaTeX =====
 # pylatexenc>=2.10

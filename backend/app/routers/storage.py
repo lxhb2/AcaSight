@@ -99,15 +99,20 @@ async def storage_download(hash_prefix: str):
 async def storage_delete(path: str):
     """删除 PDF 文件"""
     svc = get_storage_service()
-    if not os.path.isfile(path):
+    # 路径遍历防护: 确保路径在存储目录内
+    real_path = os.path.realpath(path)
+    base_dir = os.path.realpath(svc.base_dir)
+    if not (real_path.startswith(base_dir + os.sep) or real_path == base_dir):
+        raise HTTPException(403, "路径不在允许的存储目录范围内")
+    if not os.path.isfile(real_path):
         raise HTTPException(404, "File not found")
-    ok = svc.delete_pdf(path)
+    ok = svc.delete_pdf(real_path)
     return {"ok": ok}
 
 
 # ==================== 统一素材存储 (方向四) ====================
 
-MATERIAL_CATEGORIES = ["images", "data", "reports", "charts", "chart_products", "chart_raw", "templates", "other"]
+MATERIAL_CATEGORIES = ["images", "data", "reports", "charts", "chart_products", "chart_raw", "templates", "other", "pdf", "image", "svg", "doc"]
 
 
 @router.get("/unified/stats")
@@ -164,11 +169,41 @@ async def unified_download(material_id: str):
     raise HTTPException(404, "素材不存在")
 
 
+@router.get("/unified/file")
+async def unified_file(path: str = Query(..., description="素材文件路径")):
+    """通过路径获取素材文件（用于预览）"""
+    import mimetypes
+    svc = get_unified_storage()
+    # 路径遍历防护
+    real_path = os.path.realpath(path)
+    base_dir = os.path.realpath(svc.base_dir)
+    if not (real_path.startswith(base_dir + os.sep) or real_path == base_dir):
+        raise HTTPException(403, "路径不在允许的存储目录范围内")
+    if not os.path.isfile(real_path):
+        raise HTTPException(404, "文件不存在")
+
+    data = svc.get_material(real_path)
+    if data is None:
+        raise HTTPException(404, "文件读取失败")
+
+    # 根据扩展名推断 MIME 类型
+    mime_type, _ = mimetypes.guess_type(real_path)
+    if not mime_type:
+        mime_type = "application/octet-stream"
+
+    return Response(content=data, media_type=mime_type)
+
+
 @router.delete("/unified/delete")
 async def unified_delete(path: str):
     """删除素材文件"""
     svc = get_unified_storage()
-    ok = svc.delete_material(path)
+    # 路径遍历防护: 确保路径在统一存储目录内
+    real_path = os.path.realpath(path)
+    base_dir = os.path.realpath(svc.base_dir)
+    if not (real_path.startswith(base_dir + os.sep) or real_path == base_dir):
+        raise HTTPException(403, "路径不在允许的存储目录范围内")
+    ok = svc.delete_material(real_path)
     if not ok:
         raise HTTPException(404, "文件不存在")
     return {"ok": True}

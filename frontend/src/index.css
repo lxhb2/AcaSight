@@ -1610,6 +1610,9 @@ html, body, #root {
   -webkit-user-select: text !important;
   pointer-events: auto !important;
   z-index: 20 !important;
+  /* 修复文字选择联动问题：降低文字层灵敏度 */
+  opacity: 0.25 !important;
+  mix-blend-mode: multiply !important;
 }
 
 .react-pdf__Page__textLayer span,
@@ -1617,6 +1620,15 @@ html, body, #root {
   user-select: text !important;
   -webkit-user-select: text !important;
   cursor: text !important;
+  /* 防止选择时自动扩展到相邻文字 */
+  line-height: 1.2 !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  /* 不使用 inline-block：会破坏 PDF TextLayer 排版对齐 */
+  white-space: pre !important;
+  /* 防止跨行选择时自动选中整行 */
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .react-pdf__Page__textContent {
@@ -1624,6 +1636,9 @@ html, body, #root {
   user-select: text !important;
   -webkit-user-select: text !important;
   z-index: 20 !important;
+  /* 修复文字选择联动问题 */
+  opacity: 0.25 !important;
+  mix-blend-mode: multiply !important;
 }
 
 .react-pdf__Page__textContent span {
@@ -1631,6 +1646,9 @@ html, body, #root {
   user-select: text !important;
   -webkit-user-select: text !important;
   cursor: text !important;
+  line-height: 1.2 !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
 }
 
 /* PDF.js 自带批注层（如链接）不可交互，避免遮挡文本选择 */
@@ -1656,17 +1674,28 @@ html, body, #root {
 
 .pdf-page-wrapper .react-pdf__Page {
   max-width: 100% !important;
+  /* 修复缩放后错位：确保 Page 容器使用 canvas 的实际尺寸 */
+  position: relative !important;
 }
 
 .pdf-page-wrapper .react-pdf__Page canvas {
   max-width: 100% !important;
   height: auto !important;
+  /* 修复缩放后错位：canvas 作为定位基准 */
+  display: block !important;
 }
 
 .pdf-page-wrapper .react-pdf__Page__textContent {
   pointer-events: auto !important;
   opacity: 1 !important;
   z-index: 20 !important;
+  /* 修复缩放后错位：textLayer 严格对齐 canvas */
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow: hidden !important;
 }
 
 /* AnnotationOverlay：非标注模式不拦截鼠标 */

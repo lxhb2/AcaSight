@@ -5,6 +5,7 @@ import {
   Database, BarChart3, Loader2, Pencil, List,
 } from 'lucide-react';
 import { useAgentStore, type PanelContext } from '@/store/agentStore';
+import { useApp } from '@/contexts/AppContext';
 
 interface ContextAction {
   label: string;
@@ -71,6 +72,7 @@ interface ContextualAgentBarProps {
   sectionType?: string;
   searchQuery?: string;
   onOpenAgentPanel?: () => void;
+  onTranslate?: (text: string) => void;
   mousePosition?: { x: number; y: number } | null;
 }
 
@@ -82,6 +84,7 @@ export const ContextualAgentBar: React.FC<ContextualAgentBarProps> = ({
   sectionType,
   searchQuery,
   onOpenAgentPanel,
+  onTranslate: _onTranslate,
   mousePosition,
 }) => {
   const [showBubble, setShowBubble] = useState(false);
@@ -90,6 +93,7 @@ export const ContextualAgentBar: React.FC<ContextualAgentBarProps> = ({
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { setShowFloatingTranslate } = useApp();
 
   const { isRunning, setContext, sendTask } = useAgentStore();
 
@@ -147,10 +151,25 @@ export const ContextualAgentBar: React.FC<ContextualAgentBarProps> = ({
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  // 所有操作统一走 Agent（不再用直调 API）
+  // 所有操作统一走 Agent（翻译除外 — 翻译直接弹出悬浮翻译窗）
   const handleQuickAction = useCallback((action: ContextAction) => {
     if (action.prompt === 'highlight' || action.prompt === 'note') {
       setActiveAction(action.label);
+      return;
+    }
+    // 翻译：直接弹出悬浮翻译窗，传入选中文本和鼠标位置
+    if (action.label === "翻译") {
+      // 通过 AppContext 传递选中文本和位置
+      const appState = (window as any).__acasight_app_state;
+      if (appState && selectedText) {
+        appState.setFloatTranslateText(selectedText);
+        if (mousePosition) {
+          appState.setFloatTranslatePos({ x: mousePosition.x + 4, y: mousePosition.y + 4 });
+        }
+      }
+      setShowFloatingTranslate(true);
+      setShowPanel(false);
+      setShowBubble(false);
       return;
     }
     // Route through Agent
@@ -161,7 +180,7 @@ export const ContextualAgentBar: React.FC<ContextualAgentBarProps> = ({
     sendTask(fullPrompt);
     if (onOpenAgentPanel) onOpenAgentPanel();
     setShowPanel(false);
-  }, [selectedText, pdfText, sendTask, onOpenAgentPanel]);
+  }, [selectedText, pdfText, sendTask, onOpenAgentPanel, setShowFloatingTranslate, mousePosition]);
 
   // unused helpers removed (inline result display removed — results now go to Agent Panel)
 

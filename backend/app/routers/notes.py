@@ -5,6 +5,7 @@ Markdown 编辑 / 保存 / 导出为 Word
 
 import os
 import json
+import re
 import uuid
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
@@ -18,6 +19,14 @@ router = APIRouter()
 
 NOTES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "notes")
 os.makedirs(NOTES_DIR, exist_ok=True)
+
+_SAFE_NOTE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def _validate_note_id(note_id: str):
+    """验证 note_id 只包含安全字符，防止路径遍历"""
+    if not _SAFE_NOTE_ID_PATTERN.match(note_id):
+        raise HTTPException(400, "note_id 只允许包含字母、数字、连字符和下划线")
 
 
 class SaveNoteRequest(BaseModel):
@@ -35,6 +44,7 @@ class ExportWordRequest(BaseModel):
 async def save_note(req: SaveNoteRequest):
     """保存或更新笔记"""
     note_id = req.note_id or str(uuid.uuid4())
+    _validate_note_id(note_id)
     note_file = os.path.join(NOTES_DIR, f"{note_id}.json")
     data = {
         "id": note_id,
@@ -66,6 +76,7 @@ async def list_notes():
 @router.get("/{note_id}")
 async def get_note(note_id: str):
     """获取单个笔记"""
+    _validate_note_id(note_id)
     note_file = os.path.join(NOTES_DIR, f"{note_id}.json")
     if not os.path.exists(note_file):
         raise HTTPException(404, "笔记不存在")
@@ -76,6 +87,7 @@ async def get_note(note_id: str):
 @router.delete("/{note_id}")
 async def delete_note(note_id: str):
     """删除笔记"""
+    _validate_note_id(note_id)
     note_file = os.path.join(NOTES_DIR, f"{note_id}.json")
     if os.path.exists(note_file):
         os.remove(note_file)

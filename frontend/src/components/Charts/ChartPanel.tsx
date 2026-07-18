@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import {
@@ -10,6 +10,7 @@ import { CHART_TEMPLATES } from './chartTemplates';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useApp, usePanels } from '@/contexts/AppContext';
 import { chartApi, dataPreprocessApi } from '@/services/api';
+import { openFile, openTextFile, saveFile } from '@/lib/tauri-adapter';
 
 
 const Plot = createPlotlyComponent(Plotly);
@@ -46,7 +47,6 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
   const [configOpen, setConfigOpen] = useState(true);
   const [dataOpen, setDataOpen] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const chartRef = useRef<any>(null);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [fitType, setFitType] = useState<'none' | 'linear' | 'polynomial'>('none');
@@ -72,7 +72,6 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
   const [wizardSuggestion, setWizardSuggestion] = useState<{ chart_type: string; reason: string; x_col: string; y_cols: string[] } | null>(null);
   const [rawImporting, setRawImporting] = useState(false);
   const [rawInstrument, setRawInstrument] = useState('auto');
-  const rawFileRef = useRef<HTMLInputElement>(null);
   const { } = useTheme();
   const { setPendingNoteContent } = useApp();
   const { togglePanel, openPanels } = usePanels();
@@ -165,23 +164,28 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
   }, [onDataChange, parseCols]);
 
   // 解析上传文件 (CSV / JSON / XLSX)
-  const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const ext = file.name.split('.').pop()?.toLowerCase();
+  const handleFile = useCallback(async () => {
+    const ext = (name: string) => name.split('.').pop()?.toLowerCase() || '';
     try {
-      if (ext === 'json') {
-        const text = await file.text();
-        const json = JSON.parse(text);
+      // 先尝试用 openTextFile（适用于 CSV/JSON/TSV/TXT）
+      const textFiles = await openTextFile({ filters: [{ name: 'Data', extensions: ['csv', 'json', 'tsv', 'txt'] }, { name: 'Excel', extensions: ['xlsx', 'xls'] }] });
+      if (!textFiles.length) return;
+      const file = textFiles[0];
+      const e = ext(file.name);
+
+      if (e === 'json') {
+        const json = JSON.parse(file.content);
         const arr = Array.isArray(json) ? json : [json];
         const cols = parseCols(arr);
         setData(arr); setColumns(cols); setSelectedTemplate('');
         if (onDataChange) onDataChange(arr, cols);
-      } else if (ext === 'xlsx' || ext === 'xls') {
+      } else if (e === 'xlsx' || e === 'xls') {
+        // Excel 需要二进制内容，重新用 openFile 获取
+        const binFiles = await openFile({ filters: [{ name: 'Excel', extensions: ['xlsx', 'xls'] }] });
+        if (!binFiles.length) return;
         const ExcelJS = await import('exceljs');
-        const buf = await file.arrayBuffer();
         const wb = new ExcelJS.Workbook();
-        await wb.xlsx.load(buf);
+        await wb.xlsx.load(binFiles[0].content.buffer as ArrayBuffer);
         const ws = wb.worksheets[0];
         if (!ws || ws.rowCount < 2) return;
         const headers: string[] = [];
@@ -205,8 +209,8 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
         if (onDataChange) onDataChange(arr, cols);
       } else {
         // CSV / TSV / TXT — 自动检测分隔符
-        const text = await file.text();
-        const delim = ext === 'txt' ? detectDelimiter(text) : (ext === 'tsv' ? '\t' : ',');
+        const text = file.content;
+        const delim = e === 'txt' ? detectDelimiter(text) : (e === 'tsv' ? '\t' : ',');
         const { headers, rows } = parseCSV(text, delim);
         if (headers.length < 1 || rows.length < 1) return;
         const arr = rows.map(r => {
@@ -222,17 +226,17 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
         if (onDataChange) onDataChange(arr, cols);
       }
     } catch (err) { console.error('Parse error:', err); }
-    e.target.value = '';
   }, [onDataChange, parseCols, parseCSV]);
 
-  const handleRawImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleRawImport = useCallback(async () => {
     setRawImporting(true);
     try {
+      const files = await openFile({ filters: [{ name: 'Raw Data', extensions: ['txt', 'csv', 'tsv', 'dat', 'xy', 'raw', 'asc', 'prn'] }] });
+      if (!files.length) return;
+      const f = files[0];
+      // 从返回内容创建 File 对象传给 dataPreprocessApi.parse
+      const file = new File([f.content.buffer as ArrayBuffer], f.name);
       const result = await dataPreprocessApi.parse(file, rawInstrument, 'chart_data');
-      console.log('[RawImport] API result:', JSON.stringify(result).slice(0, 500));
-      console.log('[RawImport] result.ok:', result.ok, 'result.data type:', typeof result.data, Array.isArray(result.data));
       if (result.ok && result.data && result.data.length > 0) {
         const arr = (result.data as Record<string, unknown>[]).map(row => {
           const clean: Record<string, unknown> = {};
@@ -242,16 +246,12 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
           return clean;
         });
         const cols = parseCols(arr);
-        console.log('[RawImport] parsed cols:', JSON.stringify(cols));
-        console.log('[RawImport] first data point:', JSON.stringify(arr[0]));
         setData(arr);
         setColumns(cols);
         setSelectedTemplate('');
         setXCol(cols[0]?.key || '');
         setYCols(cols.filter(c => c.type === 'number' && c.key !== cols[0]?.key).slice(0, 4).map(c => c.key));
         if (onDataChange) onDataChange(arr, cols);
-        const detectedLabel = result.detected_type !== 'generic' ? ` [${result.detected_type}]` : '';
-        console.log(`Raw data imported: ${result.row_count} rows, ${result.columns.length} cols${detectedLabel}`);
       } else {
         console.warn('[RawImport] result not ok or empty data:', result);
         alert('数据预处理返回为空，请检查文件格式');
@@ -262,7 +262,6 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
       alert('数据预处理失败: ' + msg);
     } finally {
       setRawImporting(false);
-      e.target.value = '';
     }
   }, [rawInstrument, onDataChange, parseCols]);
 
@@ -441,8 +440,11 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
       const el = chartRef.current.el;
       const opts: Record<string, unknown> = { format: fmt, width: 1200, height: 800, scale: 2 };
       const url = await Plotly.toImage(el, opts);
-      const a = document.createElement('a');
-      a.href = url; a.download = `chart.${fmt}`; a.click();
+      const base64 = url.split(',')[1];
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      await saveFile(bytes, { filters: [{ name: fmt.toUpperCase(), extensions: [fmt] }], defaultPath: 'chart.' + fmt });
     } catch (e) { console.error('Export failed:', e); }
     finally { setExporting(false); }
   };
@@ -758,15 +760,13 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderBottom: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
-          <button onClick={() => fileRef.current?.click()} title="上传数据" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 11 }}>
+          <button onClick={handleFile} title="上传数据" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--ink)', cursor: 'pointer', fontSize: 11 }}>
             <Upload size={12} /> 上传数据
           </button>
-          <input ref={fileRef} type="file" accept=".csv,.json,.xlsx,.xls,.tsv,.txt" onChange={handleFile} style={{ display: 'none' }} />
           <div style={{ position: 'relative', display: 'inline-flex' }}>
-            <button onClick={() => rawFileRef.current?.click()} disabled={rawImporting} title="原始仪器数据导入 (XRD/XPS/Raman等)" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 4, border: '1px solid #059669', background: 'rgba(5,150,105,0.08)', color: '#059669', cursor: rawImporting ? 'not-allowed' : 'pointer', fontSize: 11, opacity: rawImporting ? 0.6 : 1 }}>
+            <button onClick={handleRawImport} disabled={rawImporting} title="原始仪器数据导入 (XRD/XPS/Raman等)" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 4, border: '1px solid #059669', background: 'rgba(5,150,105,0.08)', color: '#059669', cursor: rawImporting ? 'not-allowed' : 'pointer', fontSize: 11, opacity: rawImporting ? 0.6 : 1 }}>
               {rawImporting ? <Loader2 size={12} className="spin" /> : <FlaskConical size={12} />} 原始数据
             </button>
-            <input ref={rawFileRef} type="file" accept=".txt,.csv,.tsv,.dat,.xy,.raw,.asc,.prn" onChange={handleRawImport} style={{ display: 'none' }} />
             <select value={rawInstrument} onChange={e => setRawInstrument(e.target.value)} style={{ position: 'absolute', right: -2, bottom: -2, fontSize: 8, border: '1px solid var(--border-color)', borderRadius: 2, background: 'var(--bg-secondary)', color: 'var(--ink)', padding: '0 2px', lineHeight: 1, opacity: 0.7, cursor: 'pointer' }}>
               <option value="auto">自动</option>
               <option value="xrd">XRD</option>
@@ -828,7 +828,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data: externalData, colu
                     <option key={t.id} value={t.id}>{t.icon} {t.nameCn} — {t.name}</option>
                   ))}
                 </select>
-                <button onClick={() => fileRef.current?.click()} style={{ padding: '8px 20px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+                <button onClick={handleFile} style={{ padding: '8px 20px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13 }}>
                   上传文件
                 </button>
               </div>

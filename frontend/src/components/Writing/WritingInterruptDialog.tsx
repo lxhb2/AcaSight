@@ -7,13 +7,14 @@
  * 3. 从已有作品选择
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Upload, Sparkles, Image, X,
   Check, ChevronRight,
   Loader2, FileText,
 } from 'lucide-react';
 import { agentApi } from '@/services/api';
+import { openFile } from '@/lib/tauri-adapter';
 
 // ─── 类型 ───
 
@@ -100,14 +101,12 @@ export const WritingInterruptDialog: React.FC<WritingInterruptDialogProps> = ({
   existingCharts, onLoadExistingCharts,
 }) => {
   const [selectedMode, setSelectedMode] = useState<InterruptMode>('upload');
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
   const [autoDescription, setAutoDescription] = useState('');
   const [selectedChartIds, setSelectedChartIds] = useState<Set<string>>(new Set());
   const [dataContent, setDataContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPreview, setGeneratedPreview] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 加载已有作品
   useEffect(() => {
@@ -117,19 +116,21 @@ export const WritingInterruptDialog: React.FC<WritingInterruptDialogProps> = ({
   }, [selectedMode, onLoadExistingCharts]);
 
   // 文件选择
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setUploadedFiles(files);
+  const handleFileSelect = useCallback(async () => {
+    const files = await openFile({ multiple: true, filters: [
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif'] },
+      { name: 'Data', extensions: ['csv', 'txt', 'json', 'xlsx', 'xls'] },
+      { name: 'Documents', extensions: ['pdf', 'doc', 'docx'] },
+    ] });
+    if (!files.length) return;
     setUploadedPaths(files.map(f => f.name));
-
-    // 读取数据文件内容
-    files.forEach(file => {
-      if (file.name.endsWith('.csv') || file.name.endsWith('.txt') || file.name.endsWith('.json')) {
-        const reader = new FileReader();
-        reader.onload = () => setDataContent(prev => prev + '\n' + (reader.result as string));
-        reader.readAsText(file);
+    // Read text content for data files
+    for (const f of files) {
+      if (f.name.endsWith('.csv') || f.name.endsWith('.txt') || f.name.endsWith('.json')) {
+        const decoder = new TextDecoder('utf-8');
+        setDataContent(prev => prev + '\n' + decoder.decode(f.content));
       }
-    });
+    }
   }, []);
 
   // AI 生成图表
@@ -157,14 +158,13 @@ export const WritingInterruptDialog: React.FC<WritingInterruptDialogProps> = ({
   const handleConfirm = useCallback(() => {
     const result: InterruptResult = {
       mode: selectedMode,
-      files: uploadedFiles,
       filePaths: uploadedPaths,
       autoDescription: selectedMode === 'auto_generate' ? autoDescription : undefined,
       dataContent: dataContent || undefined,
       chartIds: selectedMode === 'select_existing' ? Array.from(selectedChartIds) : undefined,
     };
     onConfirm(result);
-  }, [selectedMode, uploadedFiles, uploadedPaths, autoDescription, dataContent, selectedChartIds, onConfirm]);
+  }, [selectedMode, uploadedPaths, autoDescription, dataContent, selectedChartIds, onConfirm]);
 
   // 切换图表选择
   const toggleChart = (id: string) => {
@@ -231,12 +231,7 @@ export const WritingInterruptDialog: React.FC<WritingInterruptDialogProps> = ({
           {/* Upload mode */}
           {selectedMode === 'upload' && (
             <div>
-              <input ref={fileInputRef} type="file" multiple
-                accept=".png,.jpg,.jpeg,.gif,.csv,.txt,.json,.xlsx,.xls,.pdf,.doc,.docx"
-                onChange={handleFileSelect}
-                style={{ display: 'none' }}
-              />
-              <button onClick={() => fileInputRef.current?.click()}
+              <button onClick={handleFileSelect}
                 style={{
                   width: '100%', padding: '12px', borderRadius: 8,
                   border: '2px dashed var(--border-color)', background: 'transparent',
